@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Converta vídeos entre MP4, WebM, AVI, MOV e GIF gratuitamente no navegador."/>
+  <title>Converter Vídeo — ConverTaTudo</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.10.1/dist/ffmpeg.min.js"></script>
+  <style>
+    video { max-width: 100%; border-radius: var(--radius-sm); background: #000; display: block; margin: 12px 0; }
+    .warn-box {
+      background: #FFFBEB; border: 1px solid #FDE68A;
+      border-radius: var(--radius-sm); padding: 12px 16px;
+      font-size: 0.85rem; color: #92400E;
+    }
+    .info-box {
+      background: #EFF6FF; border: 1px solid #BFDBFE;
+      border-radius: var(--radius-sm); padding: 12px 16px;
+      font-size: 0.85rem; color: #1E40AF;
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+
+  <main>
+    <div class="tool-page">
+      <div class="container">
+
+        <div class="tool-header">
+          <a class="tool-header-back" href="../index.html" data-i18n="ui.back"></a>
+          <h1>🎬 <span id="title"></span></h1>
+          <p id="subtitle"></p>
+        </div>
+
+        <div class="ad-unit ad-unit-banner mb-4">
+          <!-- ADSENSE: ca-pub-XXXXXXXXXXXXXXXX / slot XXXXXXXXXX -->
+          <span style="font-size:0.75rem;color:var(--text-secondary)">Publicidade</span>
+        </div>
+
+        <div class="tool-layout">
+          <div class="tool-main">
+
+            <!-- ffmpeg status -->
+            <div class="info-box mb-4" id="ffmpeg-notice">
+              ⏳ <span id="ffmpeg-notice-text"></span>
+            </div>
+
+            <!-- Large file warning -->
+            <div class="warn-box mb-4" id="size-warn" style="display:none;">
+              ⚠️ <span id="size-warn-text"></span>
+            </div>
+
+            <!-- Dropzone -->
+            <div class="card">
+              <div class="dropzone" id="dropzone">
+                <div class="dropzone-icon">🎬</div>
+                <h3 id="dz-title"></h3>
+                <p id="dz-sub"></p>
+                <input type="file" id="file-input" accept="video/*"/>
+                <button class="btn btn-primary mt-4" onclick="document.getElementById('file-input').click()" id="btn-select"></button>
+              </div>
+            </div>
+
+            <!-- File loaded -->
+            <div class="card hidden" id="file-section">
+              <div class="card-title" id="lbl-selected-file"></div>
+              <div class="file-list" id="file-info"></div>
+              <video id="video-preview" controls></video>
+            </div>
+
+            <!-- Progress -->
+            <div class="card hidden" id="progress-section">
+              <div class="card-title" id="progress-label"></div>
+              <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+              <div class="progress-label" id="progress-text"></div>
+              <p class="text-muted" style="font-size:0.8rem;text-align:center;margin-top:8px;" id="progress-note"></p>
+            </div>
+
+            <!-- Result -->
+            <div class="card result-area hidden" id="result-section">
+              <h3 id="result-title"></h3>
+              <video id="video-result" controls></video>
+              <button class="btn btn-primary btn-lg" id="btn-download"></button>
+            </div>
+
+          </div>
+
+          <div class="tool-sidebar">
+            <div class="card">
+              <div class="card-title" data-i18n="ui.options"></div>
+
+              <div class="form-group">
+                <label class="form-label" data-i18n="ui.format"></label>
+                <select class="form-select" id="output-format">
+                  <option value="mp4">MP4 (H.264)</option>
+                  <option value="webm">WebM (VP8)</option>
+                  <option value="avi">AVI</option>
+                  <option value="gif">GIF animado</option>
+                </select>
+              </div>
+
+              <div class="form-group" id="quality-group">
+                <label class="form-label" id="lbl-quality"></label>
+                <select class="form-select" id="quality">
+                  <option value="18">Alta (grande)</option>
+                  <option value="23" selected>Média (recomendado)</option>
+                  <option value="28">Baixa (menor)</option>
+                </select>
+              </div>
+
+              <!-- GIF options -->
+              <div class="form-group hidden" id="gif-group">
+                <label class="form-label" id="lbl-gif-fps"></label>
+                <select class="form-select" id="gif-fps">
+                  <option value="10">10 fps</option>
+                  <option value="15" selected>15 fps</option>
+                  <option value="24">24 fps</option>
+                </select>
+              </div>
+
+              <button class="btn btn-primary w-full" id="btn-convert" disabled></button>
+            </div>
+
+            <div class="ad-unit ad-unit-square">
+              <!-- ADSENSE: ca-pub-XXXXXXXXXXXXXXXX / slot XXXXXXXXXX -->
+              <span style="font-size:0.75rem;color:var(--text-secondary)">Publicidade</span>
+            </div>
+
+            <div style="font-size:0.8rem;color:var(--text-secondary);text-align:center;" data-i18n="ui.privacyNote"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="../js/i18n.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.documentElement.lang = window.LANG === 'pt' ? 'pt-BR' : 'en';
+    renderPage('..');
+
+    const L = {
+      pt: {
+        title:         'Converter Vídeo',
+        subtitle:      'Converta entre MP4, WebM, AVI e GIF animado. Processado 100% no navegador.',
+        dzTitle:       'Arraste e solte um vídeo aqui',
+        dzSub:         'Suporta MP4, WebM, AVI, MOV, MKV e mais',
+        btnSelect:     'Selecionar vídeo',
+        btnConvert:    'Converter',
+        btnDownload:   '⬇ Baixar vídeo convertido',
+        ffmpegLoading: 'Carregando motor de conversão (~15s na primeira vez)...',
+        ffmpegReady:   '✅ Motor pronto!',
+        lblQuality:    'Qualidade',
+        lblGifFps:     'FPS do GIF',
+        lblSelected:   'Vídeo selecionado',
+        progressLbl:   'Convertendo...',
+        progressNote:  'Vídeos grandes podem levar alguns minutos. Por favor, aguarde.',
+        resultTitle:   '✅ Vídeo convertido!',
+        sizeWarn:      'Arquivo grande (>50MB). A conversão pode ser lenta.',
+        qualHigh:      'Alta (maior)',
+        qualMed:       'Média (recomendado)',
+        qualLow:       'Baixa (menor)',
+      },
+      en: {
+        title:         'Convert Video',
+        subtitle:      'Convert between MP4, WebM, AVI and animated GIF. Processed 100% in your browser.',
+        dzTitle:       'Drag & drop a video here',
+        dzSub:         'Supports MP4, WebM, AVI, MOV, MKV and more',
+        btnSelect:     'Select video',
+        btnConvert:    'Convert',
+        btnDownload:   '⬇ Download converted video',
+        ffmpegLoading: 'Loading conversion engine (~15s the first time)...',
+        ffmpegReady:   '✅ Engine ready!',
+        lblQuality:    'Quality',
+        lblGifFps:     'GIF FPS',
+        lblSelected:   'Selected video',
+        progressLbl:   'Converting...',
+        progressNote:  'Large videos may take a few minutes. Please wait.',
+        resultTitle:   '✅ Video converted!',
+        sizeWarn:      'Large file (>50MB). Conversion may be slow.',
+        qualHigh:      'High (larger)',
+        qualMed:       'Medium (recommended)',
+        qualLow:       'Low (smaller)',
+      }
+    };
+    const S = L[window.LANG] || L.pt;
+
+    document.getElementById('title').textContent            = S.title;
+    document.getElementById('subtitle').textContent         = S.subtitle;
+    document.getElementById('dz-title').textContent         = S.dzTitle;
+    document.getElementById('dz-sub').textContent           = S.dzSub;
+    document.getElementById('btn-select').textContent       = S.btnSelect;
+    document.getElementById('btn-convert').textContent      = S.btnConvert;
+    document.getElementById('btn-download').textContent     = S.btnDownload;
+    document.getElementById('ffmpeg-notice-text').textContent = S.ffmpegLoading;
+    document.getElementById('lbl-quality').textContent      = S.lblQuality;
+    document.getElementById('lbl-gif-fps').textContent      = S.lblGifFps;
+    document.getElementById('lbl-selected-file').textContent= S.lblSelected;
+    document.getElementById('progress-label').textContent   = S.progressLbl;
+    document.getElementById('progress-note').textContent    = S.progressNote;
+    document.getElementById('result-title').textContent     = S.resultTitle;
+    document.getElementById('size-warn-text').textContent   = S.sizeWarn;
+
+    // Quality options
+    const qualSel = document.getElementById('quality');
+    qualSel.options[0].textContent = S.qualHigh;
+    qualSel.options[1].textContent = S.qualMed;
+    qualSel.options[2].textContent = S.qualLow;
+    document.title = S.title + ' — ConverTaTudo';
+
+    // Format change handler
+    document.getElementById('output-format').addEventListener('change', function() {
+      const isGif = this.value === 'gif';
+      document.getElementById('quality-group').classList.toggle('hidden', isGif);
+      document.getElementById('gif-group').classList.toggle('hidden', !isGif);
+    });
+
+    // ── ffmpeg ──
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({
+      corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js',
+      log: false,
+    });
+
+    let ffmpegReady = false;
+    let selectedFile = null;
+    let resultBlob = null;
+
+    (async () => {
+      try {
+        await ffmpeg.load();
+        ffmpegReady = true;
+        document.getElementById('ffmpeg-notice-text').textContent = S.ffmpegReady;
+        setTimeout(() => document.getElementById('ffmpeg-notice').style.display = 'none', 2000);
+        if (selectedFile) document.getElementById('btn-convert').disabled = false;
+      } catch(e) {
+        document.getElementById('ffmpeg-notice-text').textContent = '⚠️ Erro ao carregar. Recarregue a página.';
+      }
+    })();
+
+    // Dropzone
+    initDropzone({
+      el: document.getElementById('dropzone'),
+      accept: 'video/*',
+      multiple: false,
+      onFiles: (files) => { if (files[0]) loadFile(files[0]); }
+    });
+    document.getElementById('file-input').addEventListener('change', function() {
+      if (this.files[0]) loadFile(this.files[0]);
+      this.value = '';
+    });
+
+    function loadFile(file) {
+      selectedFile = file;
+      const url = URL.createObjectURL(file);
+      document.getElementById('video-preview').src = url;
+      const info = document.getElementById('file-info');
+      info.innerHTML = `
+        <div class="file-item">
+          <span class="file-item-icon">🎬</span>
+          <span class="file-item-name">${file.name}</span>
+          <span class="file-item-size">${formatSize(file.size)}</span>
+        </div>`;
+      document.getElementById('file-section').classList.remove('hidden');
+      document.getElementById('result-section').classList.add('hidden');
+
+      // Size warning
+      const sizeWarn = document.getElementById('size-warn');
+      sizeWarn.style.display = file.size > 50 * 1024 * 1024 ? '' : 'none';
+
+      if (ffmpegReady) document.getElementById('btn-convert').disabled = false;
+    }
+
+    document.getElementById('btn-convert').addEventListener('click', convertVideo);
+
+    async function convertVideo() {
+      if (!selectedFile || !ffmpegReady) return;
+      const fmt = document.getElementById('output-format').value;
+      const outputName = fileBaseName(selectedFile.name) + '.' + fmt;
+      const inputExt = fileExt(selectedFile.name);
+      const inputName = `input.${inputExt}`;
+
+      document.getElementById('progress-section').classList.remove('hidden');
+      document.getElementById('result-section').classList.add('hidden');
+      document.getElementById('btn-convert').disabled = true;
+
+      const bar = document.getElementById('progress-bar');
+      const txt = document.getElementById('progress-text');
+
+      let prog = 0;
+      const progInterval = setInterval(() => {
+        prog = Math.min(prog + 1, 90);
+        bar.style.width = prog + '%';
+        txt.textContent = prog + '%';
+      }, 300);
+
+      try {
+        ffmpeg.FS('writeFile', inputName, await fetchFile(selectedFile));
+
+        let args = ['-i', inputName];
+
+        if (fmt === 'mp4') {
+          const crf = document.getElementById('quality').value;
+          args.push('-c:v', 'libx264', '-crf', crf, '-preset', 'fast', '-c:a', 'aac');
+        } else if (fmt === 'webm') {
+          args.push('-c:v', 'libvpx', '-crf', '10', '-b:v', '1M', '-c:a', 'libvorbis');
+        } else if (fmt === 'avi') {
+          args.push('-c:v', 'mpeg4', '-c:a', 'mp3');
+        } else if (fmt === 'gif') {
+          const fps = document.getElementById('gif-fps').value;
+          args.push('-vf', `fps=${fps},scale=480:-1:flags=lanczos`, '-loop', '0');
+        }
+
+        args.push(outputName);
+        await ffmpeg.run(...args);
+
+        clearInterval(progInterval);
+        bar.style.width = '100%';
+        txt.textContent = '100%';
+
+        const data = ffmpeg.FS('readFile', outputName);
+        const mimeMap = { mp4: 'video/mp4', webm: 'video/webm', avi: 'video/x-msvideo', gif: 'image/gif' };
+        resultBlob = new Blob([data.buffer], { type: mimeMap[fmt] || 'video/mp4' });
+        const url = URL.createObjectURL(resultBlob);
+
+        if (fmt === 'gif') {
+          // Show as image for GIF
+          document.getElementById('video-result').style.display = 'none';
+          const img = document.getElementById('gif-result') || (() => {
+            const i = document.createElement('img');
+            i.id = 'gif-result';
+            i.style.maxWidth = '100%';
+            document.getElementById('result-section').insertBefore(i, document.getElementById('btn-download'));
+            return i;
+          })();
+          img.src = url;
+        } else {
+          document.getElementById('video-result').style.display = '';
+          document.getElementById('video-result').src = url;
+        }
+
+        document.getElementById('progress-section').classList.add('hidden');
+        document.getElementById('result-section').classList.remove('hidden');
+        toast(window.LANG === 'pt' ? 'Conversão concluída!' : 'Conversion complete!', 'success');
+
+        try { ffmpeg.FS('unlink', inputName); } catch(e) {}
+        try { ffmpeg.FS('unlink', outputName); } catch(e) {}
+      } catch(err) {
+        clearInterval(progInterval);
+        document.getElementById('progress-section').classList.add('hidden');
+        toast(window.LANG === 'pt' ? 'Erro na conversão. Tente outro formato ou arquivo menor.' : 'Conversion error. Try another format or smaller file.', 'error');
+        console.error(err);
+      }
+
+      document.getElementById('btn-convert').disabled = false;
+    }
+
+    document.getElementById('btn-download').addEventListener('click', () => {
+      if (resultBlob) {
+        const fmt = document.getElementById('output-format').value;
+        downloadBlob(resultBlob, fileBaseName(selectedFile.name) + '.' + fmt);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Converta imagens entre PNG, JPG, WebP, BMP e outros formatos gratuitamente."/>
+  <title>Converter Imagem — ConverTaTudo</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <!-- JSZip for batch download -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+
+  <main>
+    <div class="tool-page">
+      <div class="container">
+
+        <div class="tool-header">
+          <a class="tool-header-back" href="../index.html" data-i18n="ui.back"></a>
+          <h1>🔄 <span id="title"></span></h1>
+          <p id="subtitle"></p>
+        </div>
+
+        <div class="ad-unit ad-unit-banner mb-4">
+          <!-- ADSENSE: ca-pub-XXXXXXXXXXXXXXXX / slot XXXXXXXXXX -->
+          <span style="font-size:0.75rem;color:var(--text-secondary)">Publicidade</span>
+        </div>
+
+        <div class="tool-layout">
+          <div class="tool-main">
+
+            <!-- Dropzone -->
+            <div class="card">
+              <div class="dropzone" id="dropzone">
+                <div class="dropzone-icon">🔄</div>
+                <h3 id="dz-title"></h3>
+                <p id="dz-sub"></p>
+                <input type="file" id="file-input" accept="image/*" multiple/>
+                <button class="btn btn-primary mt-4" onclick="document.getElementById('file-input').click()" id="btn-select"></button>
+              </div>
+            </div>
+
+            <!-- File list -->
+            <div class="card hidden" id="files-section">
+              <div class="card-title" id="files-label"></div>
+              <div class="file-list" id="file-list"></div>
+              <div class="mt-4 flex gap-2">
+                <button class="btn btn-secondary" id="btn-add-more" onclick="document.getElementById('file-input').click()"></button>
+                <button class="btn btn-secondary" id="btn-clear"></button>
+              </div>
+            </div>
+
+            <!-- Progress -->
+            <div class="card hidden" id="progress-section">
+              <div class="card-title" id="progress-label"></div>
+              <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+              <div class="progress-label" id="progress-text">0%</div>
+            </div>
+
+            <!-- Result -->
+            <div class="card result-area hidden" id="result-section">
+              <h3 id="result-title"></h3>
+              <p id="result-subtitle"></p>
+              <div id="result-links" class="file-list" style="text-align:left;margin-bottom:12px;"></div>
+              <button class="btn btn-primary btn-lg hidden" id="btn-download-zip"></button>
+            </div>
+
+          </div>
+
+          <div class="tool-sidebar">
+            <div class="card">
+              <div class="card-title" data-i18n="ui.options"></div>
+
+              <div class="form-group">
+                <label class="form-label" data-i18n="ui.format"></label>
+                <select class="form-select" id="output-format">
+                  <option value="jpeg">JPG</option>
+                  <option value="png">PNG</option>
+                  <option value="webp">WebP</option>
+                  <option value="bmp">BMP</option>
+                </select>
+              </div>
+
+              <div class="form-group" id="quality-group">
+                <label class="form-label" data-i18n="ui.quality"></label>
+                <div class="range-wrap">
+                  <input type="range" id="quality-slider" min="1" max="100" value="90"/>
+                  <span class="range-value" id="quality-val">90%</span>
+                </div>
+              </div>
+
+              <button class="btn btn-primary w-full" id="btn-convert" disabled></button>
+            </div>
+
+            <div class="ad-unit ad-unit-square">
+              <!-- ADSENSE: ca-pub-XXXXXXXXXXXXXXXX / slot XXXXXXXXXX -->
+              <span style="font-size:0.75rem;color:var(--text-secondary)">Publicidade</span>
+            </div>
+
+            <div style="font-size:0.8rem;color:var(--text-secondary);text-align:center;" data-i18n="ui.privacyNote"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="../js/i18n.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.documentElement.lang = window.LANG === 'pt' ? 'pt-BR' : 'en';
+    renderPage('..');
+
+    const L = {
+      pt: {
+        title:        'Converter Imagem',
+        subtitle:     'Converta entre PNG, JPG, WebP, BMP. Suporte a múltiplas imagens.',
+        dzTitle:      'Arraste e solte imagens aqui',
+        dzSub:        'Suporta JPG, PNG, WebP, BMP, GIF e mais',
+        btnSelect:    'Selecionar imagens',
+        btnAddMore:   'Adicionar mais',
+        btnClear:     'Limpar',
+        btnConvert:   'Converter',
+        btnZip:       '⬇ Baixar tudo (.zip)',
+        filesLabel:   'Imagens selecionadas',
+        progressLbl:  'Convertendo...',
+        resultTitle:  '✅ Conversão concluída!',
+        resultSub:    'Clique em cada arquivo para baixar individualmente, ou baixe todos em .zip.',
+      },
+      en: {
+        title:        'Convert Image',
+        subtitle:     'Convert between PNG, JPG, WebP, BMP. Supports multiple images.',
+        dzTitle:      'Drag & drop images here',
+        dzSub:        'Supports JPG, PNG, WebP, BMP, GIF and more',
+        btnSelect:    'Select images',
+        btnAddMore:   'Add more',
+        btnClear:     'Clear',
+        btnConvert:   'Convert',
+        btnZip:       '⬇ Download all (.zip)',
+        filesLabel:   'Selected images',
+        progressLbl:  'Converting...',
+        resultTitle:  '✅ Conversion complete!',
+        resultSub:    'Click each file to download individually, or download all as .zip.',
+      }
+    };
+    const S = L[window.LANG] || L.pt;
+
+    document.getElementById('title').textContent         = S.title;
+    document.getElementById('subtitle').textContent      = S.subtitle;
+    document.getElementById('dz-title').textContent      = S.dzTitle;
+    document.getElementById('dz-sub').textContent        = S.dzSub;
+    document.getElementById('btn-select').textContent    = S.btnSelect;
+    document.getElementById('btn-add-more').textContent  = S.btnAddMore;
+    document.getElementById('btn-clear').textContent     = S.btnClear;
+    document.getElementById('btn-convert').textContent   = S.btnConvert;
+    document.getElementById('btn-download-zip').textContent = S.btnZip;
+    document.getElementById('files-label').textContent   = S.filesLabel;
+    document.getElementById('progress-label').textContent= S.progressLbl;
+    document.getElementById('result-title').textContent  = S.resultTitle;
+    document.getElementById('result-subtitle').textContent= S.resultSub;
+    document.title = S.title + ' — ConverTaTudo';
+
+    // Quality slider visibility
+    const fmtSel = document.getElementById('output-format');
+    fmtSel.addEventListener('change', () => {
+      document.getElementById('quality-group').style.display = fmtSel.value === 'png' ? 'none' : '';
+    });
+    const slider = document.getElementById('quality-slider');
+    const qVal = document.getElementById('quality-val');
+    slider.addEventListener('input', () => qVal.textContent = slider.value + '%');
+
+    // ── State ──
+    let files = [];
+    let resultBlobs = [];
+
+    initDropzone({
+      el: document.getElementById('dropzone'),
+      accept: 'image/*',
+      multiple: true,
+      onFiles: addFiles
+    });
+    document.getElementById('file-input').addEventListener('change', function() {
+      addFiles(this.files); this.value = '';
+    });
+
+    function addFiles(newFiles) {
+      for (const f of newFiles) files.push(f);
+      renderFileList();
+    }
+
+    function renderFileList() {
+      const list = document.getElementById('file-list');
+      list.innerHTML = '';
+      files.forEach((f, i) => {
+        const row = document.createElement('div');
+        row.className = 'file-item';
+        row.innerHTML = `
+          <span class="file-item-icon">🖼️</span>
+          <span class="file-item-name">${f.name}</span>
+          <span class="file-item-size">${formatSize(f.size)}</span>
+          <span class="file-item-remove" onclick="removeFile(${i})">✕</span>`;
+        list.appendChild(row);
+      });
+      const has = files.length > 0;
+      document.getElementById('files-section').classList.toggle('hidden', !has);
+      document.getElementById('btn-convert').disabled = !has;
+      document.getElementById('result-section').classList.add('hidden');
+      resultBlobs = [];
+    }
+
+    function removeFile(i) { files.splice(i, 1); renderFileList(); }
+
+    document.getElementById('btn-clear').addEventListener('click', () => { files = []; renderFileList(); });
+
+    document.getElementById('btn-convert').addEventListener('click', convertAll);
+
+    async function convertAll() {
+      if (!files.length) return;
+      const fmt = fmtSel.value;
+      const mimeType = `image/${fmt}`;
+      const quality = parseInt(slider.value) / 100;
+      const ext = fmt === 'jpeg' ? 'jpg' : fmt;
+
+      document.getElementById('progress-section').classList.remove('hidden');
+      document.getElementById('result-section').classList.add('hidden');
+      document.getElementById('btn-convert').disabled = true;
+      resultBlobs = [];
+
+      const bar = document.getElementById('progress-bar');
+      const txt = document.getElementById('progress-text');
+
+      for (let i = 0; i < files.length; i++) {
+        const blob = await convertFile(files[i], mimeType, quality);
+        resultBlobs.push({ blob, name: fileBaseName(files[i].name) + '.' + ext });
+        const pct = ((i + 1) / files.length) * 100;
+        bar.style.width = pct + '%';
+        txt.textContent = Math.round(pct) + '%';
+        await sleep(10);
+      }
+
+      document.getElementById('progress-section').classList.add('hidden');
+      renderResults(ext);
+      document.getElementById('btn-convert').disabled = false;
+      toast(window.LANG === 'pt' ? 'Conversão concluída!' : 'Conversion complete!', 'success');
+    }
+
+    function convertFile(file, mimeType, quality) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          canvas.toBlob(resolve, mimeType, mimeType === 'image/png' ? undefined : quality);
+        };
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    function renderResults(ext) {
+      const container = document.getElementById('result-links');
+      container.innerHTML = '';
+      resultBlobs.forEach(({ blob, name }) => {
+        const url = URL.createObjectURL(blob);
+        const row = document.createElement('div');
+        row.className = 'file-item';
+        row.innerHTML = `
+          <span class="file-item-icon">✅</span>
+          <span class="file-item-name">${name}</span>
+          <span class="file-item-size">${formatSize(blob.size)}</span>
+          <a href="${url}" download="${name}" class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem;">⬇</a>`;
+        container.appendChild(row);
+      });
+
+      const zipBtn = document.getElementById('btn-download-zip');
+      zipBtn.classList.toggle('hidden', resultBlobs.length <= 1);
+      document.getElementById('result-section').classList.remove('hidden');
+    }
+
+    document.getElementById('btn-download-zip').addEventListener('click', async () => {
+      const zip = new JSZip();
+      resultBlobs.forEach(({ blob, name }) => zip.file(name, blob));
+      const content = await zip.generateAsync({ type: 'blob' });
+      downloadBlob(content, 'convertatudo-imagens.zip');
+    });
+
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  </script>
+</body>
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Comprima imagens JPG, PNG e WebP gratuitamente, direto no navegador."/>
+  <title>Comprimir Imagem — ConverTaTudo</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .compare-box { text-align: center; }
+    .compare-box img { width: 100%; max-height: 300px; object-fit: contain; border-radius: var(--radius-sm); border: 1px solid var(--border); background: #f0f0f0; }
+    .compare-label { font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px; }
+    .compare-size { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+    .savings-badge { display: inline-block; background: #D1FAE5; color: #065F46; border-radius: 999px; padding: 3px 12px; font-size: 0.8rem; font-weight: 600; margin-top: 8px; }
+    @media (max-width: 500px) { .compare-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+
+  <main>
+    <div class="tool-page">
+      <div class="container">
+
+        <div class="tool-header">
+          <a class="tool-header-back" href="../index.html" data-i18n="ui.back"></a>
+          <h1>🗜️ <span id="title"></span></h1>
+          <p id="subtitle"></p>
+        </div>
+
+        <!-- Ad top -->
+        <div class="ad-unit ad-unit-banner mb-4">
+          <!-- ADSENSE: ca-pub-XXXXXXXXXXXXXXXX / slot XXXXXXXXXX -->
+          <span style="font-size:0.75rem;color:var(--text-secondary)">Publicidade</span>
+        </div>
+
+        <div class="tool-layout">
+          <div class="tool-main">
+
+            <!-- Dropzone -->
+            <div class="card" id="dropzone-card">
+              <div class="dropzone" id="dropzone">
+                <div class="dropzone-icon">🗜️</div>
+                <h3 id="dz-title"></h3>
+                <p id="dz-sub"></p>
+                <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp"/>
+                <button class="btn btn-primary mt-4" onclick="document.getElementById('file-input').click()" id="btn-select"></button>
+              </div>
+            </div>
+
+            <!-- Compare -->
+            <div class="card hidden" id="compare-section">
+              <div class="card-title" id="compare-label"></div>
+              <div class="compare-grid">
+                <div class="compare-box">
+                  <img id="original-preview" src="" alt="Original"/>
+                  <div class="compare-label" id="lbl-original"></div>
+                  <div class="compare-size" id="original-size"></div>
+                </div>
+                <div class="compare-box">
+                  <img id="compressed-preview" src="" alt="Compressed"/>
+                  <div class="compare-label" id="lbl-compressed"></div>
+                  <div class="compare-size" id="compressed-size"></div>
+                  <div class="savings-badge hidden" id="savings-badge"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Result -->
+            <div class="card result-area hidden" id="result-section">
+              <h3 id="result-title"></h3>
+              <p id="result-subtitle"></p>
+              <button class="btn btn-primary btn-lg" id="btn-download"></button>
+              <button class="btn btn-secondary mt-4" id="btn-new"></button>
+            </div>
+
+          </div>
+
+          <!-- SIDEBAR -->
+          <div class="tool-sidebar">
+            <div class="card">
+              <div class="card-title" data-i18n="ui.options"></div>
+
+              <div class="form-group">
+                <label class="form-label" id="lbl-quality"></label>
+                <div class="range-wrap">
+                  <input type="range" id="quality-slider" min="1" max="100" value="75"/>
+                  <span class="range-value" id="quality-val">75%</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" data-i18n="ui.format"></label>
+                <select class="form-select" id="output-format">
+                  <option value="jpeg">JPG</option>
+                  <option value="png">PNG</option>
+                  <option value="webp">WebP</option>
+                </select>
+              </div>
+
+              <button class="btn btn-primary w-full" id="btn-compress" disabled></button>
+            </div>
+
+            <!-- Ad sidebar -->
+            <div class="ad-unit ad-unit-square">
+              <!-- ADSENSE: ca-pub-XXXXXXXXXXXXXXXX / slot XXXXXXXXXX -->
+              <span style="font-size:0.75rem;color:var(--text-secondary)">Publicidade</span>
+            </div>
+
+            <div style="font-size:0.8rem;color:var(--text-secondary);text-align:center;" data-i18n="ui.privacyNote"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="../js/i18n.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.documentElement.lang = window.LANG === 'pt' ? 'pt-BR' : 'en';
+    renderPage('..');
+
+    const L = {
+      pt: {
+        title:        'Comprimir Imagem',
+        subtitle:     'Reduza o tamanho da sua imagem sem perder qualidade visível.',
+        dzTitle:      'Arraste e solte uma imagem aqui',
+        dzSub:        'Suporta JPG, PNG, WebP',
+        btnSelect:    'Selecionar imagem',
+        btnCompress:  'Comprimir',
+        btnDownload:  '⬇ Baixar imagem comprimida',
+        btnNew:       'Nova imagem',
+        compareLabel: 'Comparação',
+        lblOriginal:  'Original',
+        lblCompressed:'Comprimida',
+        lblQuality:   'Qualidade',
+        savingsTxt:   (pct) => `Reduzido ${pct}%`,
+        resultTitle:  '✅ Imagem comprimida!',
+        resultSub:    'Compare o resultado acima e baixe.',
+      },
+      en: {
+        title:        'Compress Image',
+        subtitle:     'Reduce your image file size without visible quality loss.',
+        dzTitle:      'Drag & drop an image here',
+        dzSub:        'Supports JPG, PNG, WebP',
+        btnSelect:    'Select image',
+        btnCompress:  'Compress',
+        btnDownload:  '⬇ Download compressed image',
+        btnNew:       'New image',
+        compareLabel: 'Comparison',
+        lblOriginal:  'Original',
+        lblCompressed:'Compressed',
+        lblQuality:   'Quality',
+        savingsTxt:   (pct) => `Reduced ${pct}%`,
+        resultTitle:  '✅ Image compressed!',
+        resultSub:    'Compare the result above and download.',
+      }
+    };
+    const S = L[window.LANG] || L.pt;
+
+    document.getElementById('title').textContent         = S.title;
+    document.getElementById('subtitle').textContent      = S.subtitle;
+    document.getElementById('dz-title').textContent      = S.dzTitle;
+    document.getElementById('dz-sub').textContent        = S.dzSub;
+    document.getElementById('btn-select').textContent    = S.btnSelect;
+    document.getElementById('btn-compress').textContent  = S.btnCompress;
+    document.getElementById('btn-download').textContent  = S.btnDownload;
+    document.getElementById('btn-new').textContent       = S.btnNew;
+    document.getElementById('compare-label').textContent = S.compareLabel;
+    document.getElementById('lbl-original').textContent  = S.lblOriginal;
+    document.getElementById('lbl-compressed').textContent= S.lblCompressed;
+    document.getElementById('lbl-quality').textContent   = S.lblQuality;
+    document.getElementById('result-title').textContent  = S.resultTitle;
+    document.getElementById('result-subtitle').textContent= S.resultSub;
+    document.title = S.title + ' — ConverTaTudo';
+
+    // ── State ──
+    let originalFile = null;
+    let compressedBlob = null;
+
+    // Quality slider
+    const slider = document.getElementById('quality-slider');
+    const qVal = document.getElementById('quality-val');
+    slider.addEventListener('input', () => {
+      qVal.textContent = slider.value + '%';
+      if (originalFile) compress();
+    });
+
+    // Format change
+    document.getElementById('output-format').addEventListener('change', () => {
+      if (originalFile) compress();
+    });
+
+    // Dropzone
+    initDropzone({
+      el: document.getElementById('dropzone'),
+      accept: 'image/jpeg,image/png,image/webp',
+      multiple: false,
+      onFiles: (files) => { if (files[0]) loadFile(files[0]); }
+    });
+    document.getElementById('file-input').addEventListener('change', function() {
+      if (this.files[0]) loadFile(this.files[0]);
+      this.value = '';
+    });
+
+    function loadFile(file) {
+      originalFile = file;
+      const url = URL.createObjectURL(file);
+      document.getElementById('original-preview').src = url;
+      document.getElementById('original-size').textContent = formatSize(file.size);
+      document.getElementById('compare-section').classList.remove('hidden');
+      document.getElementById('btn-compress').disabled = false;
+
+      // Auto-detect best output format
+      if (file.type === 'image/png') document.getElementById('output-format').value = 'png';
+      else if (file.type === 'image/webp') document.getElementById('output-format').value = 'webp';
+      else document.getElementById('output-format').value = 'jpeg';
+
+      compress();
+    }
+
+    function compress() {
+      if (!originalFile) return;
+      const quality = parseInt(slider.value) / 100;
+      const fmt = document.getElementById('output-format').value;
+      const mimeType = `image/${fmt}`;
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        canvas.toBlob((blob) => {
+          compressedBlob = blob;
+          const url = URL.createObjectURL(blob);
+          document.getElementById('compressed-preview').src = url;
+          document.getElementById('compressed-size').textContent = formatSize(blob.size);
+
+          const saved = Math.round((1 - blob.size / originalFile.size) * 100);
+          const badge = document.getElementById('savings-badge');
+          if (saved > 0) {
+            badge.textContent = S.savingsTxt(saved);
+            badge.classList.remove('hidden');
+          } else {
+            badge.classList.add('hidden');
+          }
+
+          document.getElementById('result-section').classList.remove('hidden');
+        }, mimeType, fmt === 'png' ? undefined : quality);
+      };
+      img.src = URL.createObjectURL(originalFile);
+    }
+
+    document.getElementById('btn-compress').addEventListener('click', () => {
+      compress();
+      toast(window.LANG === 'pt' ? 'Comprimido!' : 'Compressed!', 'success');
+    });
+
+    document.getElementById('btn-download').addEventListener('click', () => {
+      if (!compressedBlob) return;
+      const fmt = document.getElementById('output-format').value;
+      const name = fileBaseName(originalFile.name) + '.' + (fmt === 'jpeg' ? 'jpg' : fmt);
+      downloadBlob(compressedBlob, name);
+    });
+
+    document.getElementById('btn-new').addEventListener('click', () => {
+      originalFile = null; compressedBlob = null;
+      document.getElementById('compare-section').classList.add('hidden');
+      document.getElementById('result-section').classList.add('hidden');
+      document.getElementById('btn-compress').disabled = true;
+    });
+  </script>
+</body>
+</html>

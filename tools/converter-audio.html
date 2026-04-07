@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Converta áudios entre MP3, WAV, OGG, M4A e FLAC gratuitamente no navegador."/>
+  <title>Converter Áudio — ConverTaTudo</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <!-- ffmpeg.wasm 0.10 (single-thread, funciona sem SharedArrayBuffer) -->
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.10.1/dist/ffmpeg.min.js"></script>
+  <style>
+    .audio-player {
+      width: 100%;
+      accent-color: var(--primary);
+      margin: 12px 0;
+    }
+    .info-box {
+      background: #EFF6FF; border: 1px solid #BFDBFE;
+      border-radius: var(--radius-sm); padding: 12px 16px;
+      font-size: 0.85rem; color: #1E40AF;
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+
+  <main>
+    <div class="tool-page">
+      <div class="container">
+
+        <div class="tool-header">
+          <a class="tool-header-back" href="../index.html" data-i18n="ui.back"></a>
+          <h1>🎵 <span id="title"></span></h1>
+          <p id="subtitle"></p>
+        </div>
+
+        <div class="ad-unit ad-unit-banner mb-4">
+          <!-- ADSENSE: ca-pub-XXXXXXXXXXXXXXXX / slot XXXXXXXXXX -->
+          <span style="font-size:0.75rem;color:var(--text-secondary)">Publicidade</span>
+        </div>
+
+        <div class="tool-layout">
+          <div class="tool-main">
+
+            <!-- Loading ffmpeg notice -->
+            <div class="info-box mb-4" id="ffmpeg-notice">
+              ⏳ <span id="ffmpeg-notice-text"></span>
+            </div>
+
+            <!-- Dropzone -->
+            <div class="card">
+              <div class="dropzone" id="dropzone">
+                <div class="dropzone-icon">🎵</div>
+                <h3 id="dz-title"></h3>
+                <p id="dz-sub"></p>
+                <input type="file" id="file-input" accept="audio/*"/>
+                <button class="btn btn-primary mt-4" onclick="document.getElementById('file-input').click()" id="btn-select"></button>
+              </div>
+            </div>
+
+            <!-- File loaded -->
+            <div class="card hidden" id="file-section">
+              <div class="card-title" id="lbl-selected-file"></div>
+              <div class="file-list" id="file-info"></div>
+              <audio class="audio-player" id="audio-preview" controls></audio>
+            </div>
+
+            <!-- Progress -->
+            <div class="card hidden" id="progress-section">
+              <div class="card-title" id="progress-label"></div>
+              <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+              <div class="progress-label" id="progress-text"></div>
+            </div>
+
+            <!-- Result -->
+            <div class="card result-area hidden" id="result-section">
+              <h3 id="result-title"></h3>
+              <audio class="audio-player" id="audio-result" controls></audio>
+              <button class="btn btn-primary btn-lg" id="btn-download"></button>
+            </div>
+
+          </div>
+
+          <div class="tool-sidebar">
+            <div class="card">
+              <div class="card-title" data-i18n="ui.options"></div>
+
+              <div class="form-group">
+                <label class="form-label" data-i18n="ui.format"></label>
+                <select class="form-select" id="output-format">
+                  <option value="mp3">MP3</option>
+                  <option value="wav">WAV</option>
+                  <option value="ogg">OGG</option>
+                  <option value="m4a">M4A (AAC)</option>
+                  <option value="flac">FLAC</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" id="lbl-bitrate"></label>
+                <select class="form-select" id="bitrate">
+                  <option value="96k">96 kbps</option>
+                  <option value="128k" selected>128 kbps</option>
+                  <option value="192k">192 kbps</option>
+                  <option value="256k">256 kbps</option>
+                  <option value="320k">320 kbps</option>
+                </select>
+              </div>
+
+              <button class="btn btn-primary w-full" id="btn-convert" disabled></button>
+            </div>
+
+            <div class="ad-unit ad-unit-square">
+              <!-- ADSENSE: ca-pub-XXXXXXXXXXXXXXXX / slot XXXXXXXXXX -->
+              <span style="font-size:0.75rem;color:var(--text-secondary)">Publicidade</span>
+            </div>
+
+            <div style="font-size:0.8rem;color:var(--text-secondary);text-align:center;" data-i18n="ui.privacyNote"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="../js/i18n.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.documentElement.lang = window.LANG === 'pt' ? 'pt-BR' : 'en';
+    renderPage('..');
+
+    const L = {
+      pt: {
+        title:         'Converter Áudio',
+        subtitle:      'Converta entre MP3, WAV, OGG, M4A e FLAC. Todo o processo acontece no seu navegador.',
+        dzTitle:       'Arraste e solte um áudio aqui',
+        dzSub:         'Suporta MP3, WAV, OGG, M4A, FLAC, AAC e mais',
+        btnSelect:     'Selecionar áudio',
+        btnConvert:    'Converter',
+        btnDownload:   '⬇ Baixar áudio convertido',
+        ffmpegLoading: 'Carregando motor de conversão (pode levar ~15s na primeira vez)...',
+        ffmpegReady:   '✅ Motor de conversão pronto!',
+        lblBitrate:    'Qualidade (bitrate)',
+        lblSelected:   'Arquivo selecionado',
+        progressLbl:   'Convertendo...',
+        resultTitle:   '✅ Áudio convertido com sucesso!',
+      },
+      en: {
+        title:         'Convert Audio',
+        subtitle:      'Convert between MP3, WAV, OGG, M4A and FLAC. Everything happens in your browser.',
+        dzTitle:       'Drag & drop an audio file here',
+        dzSub:         'Supports MP3, WAV, OGG, M4A, FLAC, AAC and more',
+        btnSelect:     'Select audio',
+        btnConvert:    'Convert',
+        btnDownload:   '⬇ Download converted audio',
+        ffmpegLoading: 'Loading conversion engine (may take ~15s the first time)...',
+        ffmpegReady:   '✅ Conversion engine ready!',
+        lblBitrate:    'Quality (bitrate)',
+        lblSelected:   'Selected file',
+        progressLbl:   'Converting...',
+        resultTitle:   '✅ Audio converted successfully!',
+      }
+    };
+    const S = L[window.LANG] || L.pt;
+
+    document.getElementById('title').textContent           = S.title;
+    document.getElementById('subtitle').textContent        = S.subtitle;
+    document.getElementById('dz-title').textContent        = S.dzTitle;
+    document.getElementById('dz-sub').textContent          = S.dzSub;
+    document.getElementById('btn-select').textContent      = S.btnSelect;
+    document.getElementById('btn-convert').textContent     = S.btnConvert;
+    document.getElementById('btn-download').textContent    = S.btnDownload;
+    document.getElementById('ffmpeg-notice-text').textContent = S.ffmpegLoading;
+    document.getElementById('lbl-bitrate').textContent     = S.lblBitrate;
+    document.getElementById('lbl-selected-file').textContent= S.lblSelected;
+    document.getElementById('progress-label').textContent  = S.progressLbl;
+    document.getElementById('result-title').textContent    = S.resultTitle;
+    document.title = S.title + ' — ConverTaTudo';
+
+    // ── ffmpeg ──
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({
+      corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js',
+      log: false,
+    });
+
+    let ffmpegReady = false;
+    let selectedFile = null;
+    let resultBlob = null;
+
+    (async () => {
+      try {
+        await ffmpeg.load();
+        ffmpegReady = true;
+        document.getElementById('ffmpeg-notice-text').textContent = S.ffmpegReady;
+        setTimeout(() => document.getElementById('ffmpeg-notice').style.display = 'none', 2000);
+        if (selectedFile) document.getElementById('btn-convert').disabled = false;
+      } catch(e) {
+        document.getElementById('ffmpeg-notice-text').textContent = '⚠️ Erro ao carregar motor. Recarregue a página.';
+      }
+    })();
+
+    // Dropzone
+    initDropzone({
+      el: document.getElementById('dropzone'),
+      accept: 'audio/*',
+      multiple: false,
+      onFiles: (files) => { if (files[0]) loadFile(files[0]); }
+    });
+    document.getElementById('file-input').addEventListener('change', function() {
+      if (this.files[0]) loadFile(this.files[0]);
+      this.value = '';
+    });
+
+    function loadFile(file) {
+      selectedFile = file;
+      const url = URL.createObjectURL(file);
+      document.getElementById('audio-preview').src = url;
+      const info = document.getElementById('file-info');
+      info.innerHTML = `
+        <div class="file-item">
+          <span class="file-item-icon">🎵</span>
+          <span class="file-item-name">${file.name}</span>
+          <span class="file-item-size">${formatSize(file.size)}</span>
+        </div>`;
+      document.getElementById('file-section').classList.remove('hidden');
+      if (ffmpegReady) document.getElementById('btn-convert').disabled = false;
+      document.getElementById('result-section').classList.add('hidden');
+    }
+
+    // Convert
+    document.getElementById('btn-convert').addEventListener('click', convertAudio);
+
+    async function convertAudio() {
+      if (!selectedFile || !ffmpegReady) return;
+      const fmt = document.getElementById('output-format').value;
+      const bitrate = document.getElementById('bitrate').value;
+      const outputName = fileBaseName(selectedFile.name) + '.' + fmt;
+
+      document.getElementById('progress-section').classList.remove('hidden');
+      document.getElementById('result-section').classList.add('hidden');
+      document.getElementById('btn-convert').disabled = true;
+
+      const bar = document.getElementById('progress-bar');
+      const txt = document.getElementById('progress-text');
+
+      // Simulate progress (ffmpeg doesn't give progress for all formats)
+      let prog = 0;
+      const progInterval = setInterval(() => {
+        prog = Math.min(prog + 2, 90);
+        bar.style.width = prog + '%';
+        txt.textContent = prog + '%';
+      }, 200);
+
+      try {
+        const inputExt = fileExt(selectedFile.name);
+        const inputName = `input.${inputExt}`;
+        ffmpeg.FS('writeFile', inputName, await fetchFile(selectedFile));
+
+        // Build ffmpeg args based on format
+        const args = ['-i', inputName];
+        if (fmt === 'mp3') { args.push('-b:a', bitrate, '-f', 'mp3'); }
+        else if (fmt === 'wav') { args.push('-f', 'wav'); }
+        else if (fmt === 'ogg') { args.push('-codec:a', 'libvorbis', '-b:a', bitrate); }
+        else if (fmt === 'm4a') { args.push('-codec:a', 'aac', '-b:a', bitrate); }
+        else if (fmt === 'flac') { args.push('-f', 'flac'); }
+        args.push(outputName);
+
+        await ffmpeg.run(...args);
+
+        clearInterval(progInterval);
+        bar.style.width = '100%';
+        txt.textContent = '100%';
+
+        const data = ffmpeg.FS('readFile', outputName);
+        resultBlob = new Blob([data.buffer], { type: `audio/${fmt}` });
+        const url = URL.createObjectURL(resultBlob);
+        document.getElementById('audio-result').src = url;
+        document.getElementById('progress-section').classList.add('hidden');
+        document.getElementById('result-section').classList.remove('hidden');
+        document.getElementById('btn-download').dataset.name = outputName;
+        toast(S.resultTitle.replace('✅ ', ''), 'success');
+
+        // Cleanup
+        try { ffmpeg.FS('unlink', inputName); } catch(e) {}
+        try { ffmpeg.FS('unlink', outputName); } catch(e) {}
+      } catch(err) {
+        clearInterval(progInterval);
+        document.getElementById('progress-section').classList.add('hidden');
+        toast(window.LANG === 'pt' ? 'Erro na conversão. Tente outro formato.' : 'Conversion error. Try another format.', 'error');
+      }
+      document.getElementById('btn-convert').disabled = false;
+    }
+
+    document.getElementById('btn-download').addEventListener('click', () => {
+      if (resultBlob) {
+        const fmt = document.getElementById('output-format').value;
+        downloadBlob(resultBlob, fileBaseName(selectedFile.name) + '.' + fmt);
+      }
+    });
+  </script>
+</body>
+</html>
