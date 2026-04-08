@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gerador de Fontes — ConverTaTudo</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2791552825636590" crossorigin="anonymous"></script>
+  <style>
+    .font-input-area {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bg);
+      padding: 16px 0 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .font-input-area textarea {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 1.15rem;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      resize: none;
+      background: #fff;
+      transition: border-color .15s;
+      box-sizing: border-box;
+    }
+    .font-input-area textarea:focus { outline: none; border-color: var(--primary); }
+    .fonts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+    .font-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .font-card:hover { border-color: var(--primary); box-shadow: 0 2px 10px rgba(220,38,38,.07); }
+    .font-card .fc-name {
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .font-card .fc-text {
+      font-size: 1.25rem;
+      line-height: 1.4;
+      word-break: break-all;
+      min-height: 2.2em;
+      color: var(--text-primary);
+      cursor: text;
+      user-select: all;
+    }
+    .font-card .fc-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .font-card .fc-emoji { font-size: 1.1rem; }
+    .copy-btn {
+      padding: 5px 14px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      font-size: .8rem;
+      cursor: pointer;
+      color: var(--primary);
+      font-weight: 500;
+      transition: background .15s, border-color .15s;
+    }
+    .copy-btn:hover { background: #fee2e2; border-color: var(--primary); }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <main>
+    <div class="tool-page">
+      <div class="container">
+        <div class="tool-header">
+          <a class="tool-header-back" href="../index.html" data-i18n="ui.back"></a>
+          <h1>✨ <span id="pg-title"></span></h1>
+          <p id="pg-sub"></p>
+        </div>
+
+        <div class="font-input-area">
+          <textarea id="text-input" rows="2" id="font-input" placeholder="..." maxlength="200"></textarea>
+        </div>
+
+        <div class="fonts-grid" id="fonts-grid"></div>
+      </div>
+    </div>
+  </main>
+  <div id="footer-placeholder"></div>
+
+  <script src="../js/i18n.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    renderPage('..');
+    document.documentElement.lang = window.LANG === 'pt' ? 'pt-BR' : 'en';
+    const isPt = window.LANG === 'pt';
+
+    document.getElementById('pg-title').textContent = isPt ? 'Gerador de Fontes Especiais' : 'Fancy Font Generator';
+    document.getElementById('pg-sub').textContent   = isPt
+      ? 'Digite seu texto e copie em diferentes estilos para usar em redes sociais, bio, mensagens e mais.'
+      : 'Type your text and copy it in different styles to use on social media, bio, messages and more.';
+    document.title = (isPt ? 'Gerador de Fontes' : 'Font Generator') + ' — ConverTaTudo';
+    document.getElementById('text-input').placeholder = isPt ? 'Digite seu texto aqui...' : 'Type your text here...';
+
+    const COPY = isPt ? 'Copiar' : 'Copy';
+    const COPIED = '✓ ' + (isPt ? 'Copiado!' : 'Copied!');
+
+    // ─── Unicode offset helper ───────────────────────────────────────────────
+    function toOff(text, upOff, loOff, digOff = -1, exceptions = {}) {
+      return [...text].map(c => {
+        if (exceptions[c]) return exceptions[c];
+        const code = c.charCodeAt(0);
+        if (code >= 65 && code <= 90) return String.fromCodePoint(code - 65 + upOff);
+        if (code >= 97 && code <= 122) return String.fromCodePoint(code - 97 + loOff);
+        if (digOff >= 0 && code >= 48 && code <= 57) return String.fromCodePoint(code - 48 + digOff);
+        return c;
+      }).join('');
+    }
+
+    // ─── Font transforms ────────────────────────────────────────────────────
+    const SMALL_CAPS_MAP = {a:'ᴀ',b:'ʙ',c:'ᴄ',d:'ᴅ',e:'ᴇ',f:'ꜰ',g:'ɢ',h:'ʜ',i:'ɪ',j:'ᴊ',k:'ᴋ',l:'ʟ',m:'ᴍ',n:'ɴ',o:'ᴏ',p:'ᴘ',q:'Q',r:'ʀ',s:'ꜱ',t:'ᴛ',u:'ᴜ',v:'ᴠ',w:'ᴡ',x:'x',y:'ʏ',z:'ᴢ'};
+    const UPSIDE_MAP = {a:'ɐ',b:'q',c:'ɔ',d:'p',e:'ǝ',f:'ɟ',g:'ƃ',h:'ɥ',i:'ᴉ',j:'ɾ',k:'ʞ',l:'l',m:'ɯ',n:'u',o:'o',p:'d',q:'b',r:'ɹ',s:'s',t:'ʇ',u:'n',v:'ʌ',w:'ʍ',x:'x',y:'ʎ',z:'z',A:'∀',B:'q',C:'Ɔ',D:'p',E:'Ǝ',F:'Ⅎ',G:'פ',H:'H',I:'I',J:'ɾ',K:'ʞ',L:'˥',M:'W',N:'N',O:'O',P:'d',Q:'b',R:'ɹ',S:'s',T:'┴',U:'∩',V:'Λ',W:'M',X:'X',Y:'⅄',Z:'Z','1':'Ɩ','2':'ᄅ','3':'Ɛ','4':'ᔭ','5':'ϛ','6':'9','7':'L','8':'8','9':'6','0':'0','!':'¡','?':'¿',',':'\'','\'':',','(':')',')':'('};
+    const CIRCLE_EX = {C:'Ⓒ',S:'Ⓢ'};
+    const BOLD_SCRIPT_EX = {A:'𝓐',B:'𝓑',C:'𝓒',D:'𝓓',E:'𝓔',F:'𝓕',G:'𝓖',H:'𝓗',I:'𝓘',J:'𝓙',K:'𝓚',L:'𝓛',M:'𝓜',N:'𝓝',O:'𝓞',P:'𝓟',Q:'𝓠',R:'𝓡',S:'𝓢',T:'𝓣',U:'𝓤',V:'𝓥',W:'𝓦',X:'𝓧',Y:'𝓨',Z:'𝓩',a:'𝓪',b:'𝓫',c:'𝓬',d:'𝓭',e:'𝓮',f:'𝓯',g:'𝓰',h:'𝓱',i:'𝓲',j:'𝓳',k:'𝓴',l:'𝓵',m:'𝓶',n:'𝓷',o:'𝓸',p:'𝓹',q:'𝓺',r:'𝓻',s:'𝓼',t:'𝓽',u:'𝓾',v:'𝓿',w:'𝔀',x:'𝔁',y:'𝔂',z:'𝔃'};
+
+    function smallCaps(t) {
+      return [...t].map(c => SMALL_CAPS_MAP[c.toLowerCase()] || c).join('');
+    }
+    function upsideDown(t) {
+      return [...t].map(c => UPSIDE_MAP[c] || c).reverse().join('');
+    }
+    function strikethrough(t) {
+      return [...t].map(c => c === ' ' ? ' ' : c + '\u0336').join('');
+    }
+    function underline(t) {
+      return [...t].map(c => c === ' ' ? ' ' : c + '\u0332').join('');
+    }
+    function doubleStrike(t) {
+      return [...t].map(c => c === ' ' ? ' ' : c + '\u0333').join('');
+    }
+    function zalgo(t) {
+      const up = ['\u030d','\u030e','\u0304','\u0305','\u033f','\u0311','\u0306','\u0310','\u0352','\u0357','\u0351','\u0307','\u0308','\u030a','\u0342','\u0343'];
+      const mid= ['\u031a','\u0348','\u0302','\u031b'];
+      const dn = ['\u0317','\u0318','\u0319','\u031c','\u031d','\u031e','\u031f','\u0320','\u0324','\u0325','\u0326','\u0329','\u032a','\u032b','\u032c','\u032d'];
+      function rnd(arr, n) { let r=''; for(let i=0;i<n;i++) r+=arr[Math.floor(Math.random()*arr.length)]; return r; }
+      return [...t].map(c => c === ' ' ? c : c + rnd(up,3) + rnd(mid,1) + rnd(dn,3)).join('');
+    }
+    function fullWidth(t) {
+      return [...t].map(c => {
+        const code = c.charCodeAt(0);
+        if (code >= 33 && code <= 126) return String.fromCharCode(code + 0xFEE0);
+        if (c === ' ') return '\u3000';
+        return c;
+      }).join('');
+    }
+    function bubbleText(t) {
+      const up = '⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵'.split('');
+      const UC = 'ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏ'.split('');
+      const LC = 'ⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ'.split('');
+      const DG = '⓪①②③④⑤⑥⑦⑧⑨'.split('');
+      return [...t].map(c => {
+        const code = c.charCodeAt(0);
+        if (code >= 65 && code <= 90) return UC[code-65];
+        if (code >= 97 && code <= 122) return LC[code-97];
+        if (code >= 48 && code <= 57)  return DG[code-48];
+        return c;
+      }).join('');
+    }
+    function squaredText(t) {
+      const UC = '🅐🅑🅒🅓🅔🅕🅖🅗🅘🅙🅚🅛🅜🅝🅞🅟🅠🅡🅢🅣🅤🅥🅦🅧🅨🅩'.split('');
+      const LC = '🅐🅑🅒🅓🅔🅕🅖🅗🅘🅙🅚🅛🅜🅝🅞🅟🅠🅡🅢🅣🅤🅥🅦🅧🅨🅩'.split('');
+      return [...t].map(c => {
+        const code = c.charCodeAt(0);
+        if (code >= 65 && code <= 90) return UC[code-65];
+        if (code >= 97 && code <= 122) return LC[code-97];
+        return c;
+      }).join('');
+    }
+    function mirror(t) {
+      const map = {'a':'ɒ','b':'d','c':'ɔ','d':'b','e':'ɘ','f':'ʇ','g':'ǫ','h':'ʜ','i':'i','j':'į','k':'ʞ','l':'l','m':'m','n':'ɴ','o':'o','p':'q','q':'p','r':'ɿ','s':'ƨ','t':'ƚ','u':'u','v':'v','w':'w','x':'x','y':'ʎ','z':'z'};
+      return [...t].map(c => map[c.toLowerCase()] || c).reverse().join('');
+    }
+
+    const FONTS = [
+      { name: isPt ? '𝐍𝐞𝐠𝐫𝐢𝐭𝐨' : '𝐁𝐨𝐥𝐝',           emoji: '💪', fn: t => toOff(t, 0x1D400, 0x1D41A, 0x1D7CE) },
+      { name: isPt ? '𝐼𝑡á𝑙𝑖𝑐𝑜' : '𝐼𝑡𝑎𝑙𝑖𝑐',          emoji: '✒️', fn: t => toOff(t, 0x1D434, 0x1D44E, -1, {h:'ℎ'}) },
+      { name: isPt ? '𝑩𝒐𝒍𝒅 𝑰𝒕á𝒍𝒊𝒄𝒐' : '𝑩𝒐𝒍𝒅 𝑰𝒕𝒂𝒍𝒊𝒄',  emoji: '🖋️', fn: t => toOff(t, 0x1D468, 0x1D482) },
+      { name: '𝓒𝓾𝓻𝓼𝓲𝓿𝓪',                              emoji: '🌸', fn: t => [...t].map(c => BOLD_SCRIPT_EX[c] || c).join('') },
+      { name: isPt ? '𝔊ó𝔱𝔦𝔠𝔬' : '𝔊𝔬𝔱𝔥𝔦𝔠',           emoji: '🏰', fn: t => toOff(t, 0x1D504, 0x1D51E, -1, {C:'ℭ',H:'ℌ',I:'ℑ',R:'ℜ',Z:'ℨ'}) },
+      { name: isPt ? '𝔻𝕦𝕡𝕝𝕠 𝕔𝕠𝕟𝕥𝕠𝕣𝕟𝕠' : '𝔻𝕠𝕦𝕓𝕝𝕖 𝕊𝕥𝕣𝕦𝕔𝕜', emoji: '⬛', fn: t => toOff(t, 0x1D538, 0x1D552, 0x1D7D8, {C:'ℂ',H:'ℍ',N:'ℕ',P:'ℙ',Q:'ℚ',R:'ℝ',Z:'ℤ'}) },
+      { name: isPt ? 'ʟᴇᴛʀᴀꜱ ᴘᴇQᴜᴇɴᴀꜱ' : 'ꜱᴍᴀʟʟ ᴄᴀᴘꜱ',  emoji: '🔡', fn: smallCaps },
+      { name: isPt ? 'Ｌａｒｇｕｒａ　Ｔｏｔａｌ' : 'Ｆｕｌｌ　Ｗｉｄｔｈ', emoji: '📐', fn: fullWidth },
+      { name: isPt ? 'Ⓒⓘⓡⓒⓤⓛⓐⓓⓞ' : 'Ⓒⓘⓡⓒⓛⓔⓓ',    emoji: '🔵', fn: bubbleText },
+      { name: isPt ? '🅂🅀🅄🄰🅁🄴🄰🄳🄾' : '🅂🅀🅄🄰🅁🄴🄳',  emoji: '🟥', fn: squaredText },
+      { name: isPt ? 'D̶e̶ ̶c̶a̶b̶e̶ç̶a̶ ̶p̶r̶a̶ ̶b̶a̶i̶x̶o̶' : 'U̶p̶s̶i̶d̶e̶ ̶D̶o̶w̶n̶', emoji: '🙃', fn: upsideDown },
+      { name: isPt ? 'T̶a̶c̶h̶a̶d̶o̶' : 'S̶t̶r̶i̶k̶e̶t̶h̶r̶o̶u̶g̶h̶',    emoji: '❌', fn: strikethrough },
+      { name: isPt ? 'S̲u̲b̲l̲i̲n̲h̲a̲d̲o̲' : 'U̲n̲d̲e̲r̲l̲i̲n̲e̲d̲',         emoji: '📝', fn: underline },
+      { name: isPt ? 'F͓̽o͓̽n͓̽t͓̽e͓̽ ̽A͓̽m͓̽a͓̽l͓̽d͓̽i͓̽ç͓̽o͓̽a͓̽d͓̽a͓̽' : 'C̷u̷r̷s̷e̷d̷ ̷F̷o̷n̷t̷', emoji: '😈', fn: zalgo },
+    ];
+
+    const grid = document.getElementById('fonts-grid');
+    const DEFAULT_TEXT = isPt ? 'ConverTaTudo' : 'ConverTaTudo';
+
+    function buildCards(text) {
+      grid.innerHTML = '';
+      const src = text || DEFAULT_TEXT;
+      FONTS.forEach((font, i) => {
+        const converted = font.fn(src);
+        const card = document.createElement('div');
+        card.className = 'font-card';
+        card.innerHTML = `
+          <div class="fc-name">${font.emoji} ${font.name}</div>
+          <div class="fc-text" id="fc-text-${i}">${converted}</div>
+          <div class="fc-footer">
+            <span></span>
+            <button class="copy-btn" id="fc-copy-${i}">${COPY}</button>
+          </div>
+        `;
+        card.querySelector('.copy-btn').addEventListener('click', () => {
+          navigator.clipboard.writeText(converted);
+          card.querySelector('.copy-btn').textContent = COPIED;
+          setTimeout(() => card.querySelector('.copy-btn').textContent = COPY, 1500);
+        });
+        grid.appendChild(card);
+      });
+    }
+
+    buildCards(DEFAULT_TEXT);
+    document.getElementById('text-input').value = DEFAULT_TEXT;
+
+    document.getElementById('text-input').addEventListener('input', function() {
+      buildCards(this.value);
+    });
+  </script>
+</body>
+</html>

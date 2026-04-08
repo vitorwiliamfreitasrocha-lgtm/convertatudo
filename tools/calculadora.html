@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculadora de Porcentagem — ConverTaTudo</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2791552825636590" crossorigin="anonymous"></script>
+  <style>
+    .calc-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 14px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .calc-card:hover { border-color: var(--primary); box-shadow: 0 2px 12px rgba(220,38,38,.07); }
+    .calc-sentence {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+    .calc-sentence .ni {
+      width: 90px;
+      padding: 6px 10px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: center;
+      background: #fff;
+      transition: border-color .15s;
+    }
+    .calc-sentence .ni:focus { outline: none; border-color: var(--primary); }
+    .calc-sentence .kw { font-weight: 600; }
+    .calc-sentence .kw-up   { color: #16a34a; }
+    .calc-sentence .kw-down { color: var(--primary); }
+    .calc-result {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .calc-result .res-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--primary);
+      min-width: 80px;
+    }
+    .calc-result .res-label { font-size: .85rem; color: var(--text-secondary); }
+    .calc-result .res-formula { font-size: .78rem; color: var(--text-secondary); font-family: monospace; margin-top: 2px; }
+    .copy-btn {
+      margin-left: auto;
+      padding: 6px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: .8rem;
+      cursor: pointer;
+      color: var(--primary);
+      transition: background .15s;
+    }
+    .copy-btn:hover { background: #fee2e2; }
+    @media(max-width:500px) {
+      .calc-sentence .ni { width: 72px; }
+      .calc-result .res-value { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <main>
+    <div class="tool-page">
+      <div class="container" style="max-width:720px;">
+        <div class="tool-header">
+          <a class="tool-header-back" href="../index.html" data-i18n="ui.back"></a>
+          <h1>🧮 <span id="pg-title"></span></h1>
+          <p id="pg-sub"></p>
+        </div>
+
+        <!-- 1: X% de Y -->
+        <div class="calc-card" id="card-1">
+          <div class="calc-sentence">
+            <span id="s1-pre"></span>
+            <input class="ni" type="number" id="c1-pct" value="15"/>
+            <span>%</span>
+            <span id="s1-mid"></span>
+            <input class="ni" type="number" id="c1-num" value="200"/>
+            <span>?</span>
+          </div>
+          <div class="calc-result">
+            <div>
+              <div class="res-value" id="r1-val">30</div>
+              <div class="res-label" id="r1-lbl"></div>
+              <div class="res-formula" id="r1-formula"></div>
+            </div>
+            <button class="copy-btn" id="r1-copy"></button>
+          </div>
+        </div>
+
+        <!-- 2: X é qual % de Y -->
+        <div class="calc-card" id="card-2">
+          <div class="calc-sentence">
+            <span id="s2-pre"></span>
+            <input class="ni" type="number" id="c2-part" value="30"/>
+            <span id="s2-mid"></span>
+            <input class="ni" type="number" id="c2-total" value="200"/>
+            <span>?</span>
+          </div>
+          <div class="calc-result">
+            <div>
+              <div class="res-value" id="r2-val">15%</div>
+              <div class="res-label" id="r2-lbl"></div>
+              <div class="res-formula" id="r2-formula"></div>
+            </div>
+            <button class="copy-btn" id="r2-copy"></button>
+          </div>
+        </div>
+
+        <!-- 3: X + Y% (aumento) -->
+        <div class="calc-card" id="card-3">
+          <div class="calc-sentence">
+            <span id="s3-pre"></span>
+            <input class="ni" type="number" id="c3-val" value="250"/>
+            <span id="s3-mid"></span>
+            <input class="ni" type="number" id="c3-pct" value="20"/>
+            <span>%?</span>
+          </div>
+          <div class="calc-result">
+            <div>
+              <div class="res-value" id="r3-val">300</div>
+              <div class="res-label" id="r3-lbl"></div>
+              <div class="res-formula" id="r3-formula"></div>
+            </div>
+            <button class="copy-btn" id="r3-copy"></button>
+          </div>
+        </div>
+
+        <!-- 4: X - Y% (desconto) -->
+        <div class="calc-card" id="card-4">
+          <div class="calc-sentence">
+            <span id="s4-pre"></span>
+            <input class="ni" type="number" id="c4-val" value="250"/>
+            <span id="s4-mid"></span>
+            <input class="ni" type="number" id="c4-pct" value="20"/>
+            <span>%?</span>
+          </div>
+          <div class="calc-result">
+            <div>
+              <div class="res-value" id="r4-val">200</div>
+              <div class="res-label" id="r4-lbl"></div>
+              <div class="res-formula" id="r4-formula"></div>
+            </div>
+            <button class="copy-btn" id="r4-copy"></button>
+          </div>
+        </div>
+
+        <!-- 5: Variação % de A para B -->
+        <div class="calc-card" id="card-5">
+          <div class="calc-sentence">
+            <span id="s5-pre"></span>
+            <input class="ni" type="number" id="c5-from" value="100"/>
+            <span id="s5-mid"></span>
+            <input class="ni" type="number" id="c5-to" value="135"/>
+            <span id="s5-suf">?</span>
+          </div>
+          <div class="calc-result">
+            <div>
+              <div class="res-value" id="r5-val">+35%</div>
+              <div class="res-label" id="r5-lbl"></div>
+              <div class="res-formula" id="r5-formula"></div>
+            </div>
+            <button class="copy-btn" id="r5-copy"></button>
+          </div>
+        </div>
+
+        <!-- 6: X é Y% de quanto? -->
+        <div class="calc-card" id="card-6">
+          <div class="calc-sentence">
+            <span id="s6-pre"></span>
+            <input class="ni" type="number" id="c6-val" value="30"/>
+            <span id="s6-mid"></span>
+            <input class="ni" type="number" id="c6-pct" value="15"/>
+            <span id="s6-suf">% de quanto?</span>
+          </div>
+          <div class="calc-result">
+            <div>
+              <div class="res-value" id="r6-val">200</div>
+              <div class="res-label" id="r6-lbl"></div>
+              <div class="res-formula" id="r6-formula"></div>
+            </div>
+            <button class="copy-btn" id="r6-copy"></button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+  <div id="footer-placeholder"></div>
+
+  <script src="../js/i18n.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    renderPage('..');
+    document.documentElement.lang = window.LANG === 'pt' ? 'pt-BR' : 'en';
+
+    const isPt = window.LANG === 'pt';
+    const T = {
+      title:  isPt ? 'Calculadora de Porcentagem' : 'Percentage Calculator',
+      sub:    isPt ? 'Escolha o tipo de cálculo, digite os valores e veja o resultado instantaneamente.'
+                   : 'Choose the calculation type, enter the values and see the result instantly.',
+      copy:   isPt ? 'Copiar' : 'Copy',
+      copied: '✓',
+
+      s1pre:  isPt ? 'Quanto é' : 'What is',
+      s1mid:  isPt ? 'de' : 'of',
+      r1lbl:  isPt ? 'Resultado' : 'Result',
+
+      s2pre:  isPt ? 'O valor' : 'The value',
+      s2mid:  isPt ? 'é qual porcentagem de' : 'is what percentage of',
+      r2lbl:  isPt ? '% do total' : '% of total',
+
+      s3pre:  isPt ? 'Qual é' : 'What is',
+      s3mid:  isPt ? 'com aumento de' : 'with an increase of',
+      r3lbl:  isPt ? 'Valor com aumento' : 'Value with increase',
+
+      s4pre:  isPt ? 'Qual é' : 'What is',
+      s4mid:  isPt ? 'com desconto de' : 'with a discount of',
+      r4lbl:  isPt ? 'Valor com desconto' : 'Value with discount',
+
+      s5pre:  isPt ? 'Um valor de' : 'A value of',
+      s5mid:  isPt ? 'que mudou para' : 'that changed to',
+      s5suf:  isPt ? '— qual a variação %?' : '— what is the % change?',
+      r5lbl:  isPt ? 'Variação percentual' : 'Percentage change',
+
+      s6pre:  isPt ? 'O valor' : 'The value',
+      s6mid:  isPt ? 'é' : 'is',
+      s6suf:  isPt ? '% de quanto?' : '% of what number?',
+      r6lbl:  isPt ? 'Total (100%)' : 'Total (100%)',
+    };
+
+    document.getElementById('pg-title').textContent = T.title;
+    document.getElementById('pg-sub').textContent   = T.sub;
+    document.title = T.title + ' — ConverTaTudo';
+
+    // Sentence labels
+    document.getElementById('s1-pre').textContent = T.s1pre;
+    document.getElementById('s1-mid').textContent = T.s1mid;
+    document.getElementById('s2-pre').textContent = T.s2pre;
+    document.getElementById('s2-mid').textContent = T.s2mid;
+    document.getElementById('s3-pre').textContent = T.s3pre;
+    document.getElementById('s3-mid').textContent = T.s3mid;
+    document.getElementById('s4-pre').textContent = T.s4pre;
+    document.getElementById('s4-mid').textContent = T.s4mid;
+    document.getElementById('s5-pre').textContent = T.s5pre;
+    document.getElementById('s5-mid').textContent = T.s5mid;
+    document.getElementById('s5-suf').textContent = T.s5suf;
+    document.getElementById('s6-pre').textContent = T.s6pre;
+    document.getElementById('s6-mid').textContent = T.s6mid;
+    document.getElementById('s6-suf').textContent = T.s6suf;
+    document.getElementById('r1-lbl').textContent = T.r1lbl;
+    document.getElementById('r2-lbl').textContent = T.r2lbl;
+    document.getElementById('r3-lbl').textContent = T.r3lbl;
+    document.getElementById('r4-lbl').textContent = T.r4lbl;
+    document.getElementById('r5-lbl').textContent = T.r5lbl;
+    document.getElementById('r6-lbl').textContent = T.r6lbl;
+    ['r1','r2','r3','r4','r5','r6'].forEach(id => {
+      document.getElementById(id+'-copy').textContent = T.copy;
+    });
+
+    function fmt(n) {
+      if (!isFinite(n)) return '—';
+      const abs = Math.abs(n);
+      const str = abs < 0.001 ? n.toFixed(6)
+                : abs % 1 === 0 ? n.toFixed(0)
+                : n.toFixed(2);
+      return parseFloat(str).toLocaleString(isPt ? 'pt-BR' : 'en-US');
+    }
+
+    function setResult(id, value, formula) {
+      const el = document.getElementById('r' + id + '-val');
+      el.textContent = value;
+      document.getElementById('r' + id + '-formula').textContent = formula;
+      const copyBtn = document.getElementById('r' + id + '-copy');
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(value);
+        copyBtn.textContent = T.copied;
+        setTimeout(() => copyBtn.textContent = T.copy, 1200);
+      };
+    }
+
+    function calc1() {
+      const p = parseFloat(document.getElementById('c1-pct').value) || 0;
+      const n = parseFloat(document.getElementById('c1-num').value) || 0;
+      const res = n * p / 100;
+      setResult(1, fmt(res), `${fmt(n)} × ${fmt(p)} ÷ 100`);
+    }
+    function calc2() {
+      const part  = parseFloat(document.getElementById('c2-part').value) || 0;
+      const total = parseFloat(document.getElementById('c2-total').value) || 1;
+      const res = part / total * 100;
+      setResult(2, fmt(res) + '%', `${fmt(part)} ÷ ${fmt(total)} × 100`);
+    }
+    function calc3() {
+      const v = parseFloat(document.getElementById('c3-val').value) || 0;
+      const p = parseFloat(document.getElementById('c3-pct').value) || 0;
+      const res = v * (1 + p / 100);
+      setResult(3, fmt(res), `${fmt(v)} × ${fmt(1 + p/100)}`);
+    }
+    function calc4() {
+      const v = parseFloat(document.getElementById('c4-val').value) || 0;
+      const p = parseFloat(document.getElementById('c4-pct').value) || 0;
+      const res = v * (1 - p / 100);
+      setResult(4, fmt(res), `${fmt(v)} × ${fmt(1 - p/100)}`);
+    }
+    function calc5() {
+      const a = parseFloat(document.getElementById('c5-from').value) || 1;
+      const b = parseFloat(document.getElementById('c5-to').value)   || 0;
+      const pct = (b - a) / a * 100;
+      const sign = pct >= 0 ? '+' : '';
+      setResult(5, sign + fmt(pct) + '%', `(${fmt(b)} − ${fmt(a)}) ÷ ${fmt(a)} × 100`);
+    }
+    function calc6() {
+      const v = parseFloat(document.getElementById('c6-val').value) || 0;
+      const p = parseFloat(document.getElementById('c6-pct').value) || 1;
+      const res = v / (p / 100);
+      setResult(6, fmt(res), `${fmt(v)} ÷ (${fmt(p)} ÷ 100)`);
+    }
+
+    document.getElementById('c1-pct').addEventListener('input', calc1);
+    document.getElementById('c1-num').addEventListener('input', calc1);
+    document.getElementById('c2-part').addEventListener('input', calc2);
+    document.getElementById('c2-total').addEventListener('input', calc2);
+    document.getElementById('c3-val').addEventListener('input', calc3);
+    document.getElementById('c3-pct').addEventListener('input', calc3);
+    document.getElementById('c4-val').addEventListener('input', calc4);
+    document.getElementById('c4-pct').addEventListener('input', calc4);
+    document.getElementById('c5-from').addEventListener('input', calc5);
+    document.getElementById('c5-to').addEventListener('input', calc5);
+    document.getElementById('c6-val').addEventListener('input', calc6);
+    document.getElementById('c6-pct').addEventListener('input', calc6);
+
+    calc1(); calc2(); calc3(); calc4(); calc5(); calc6();
+  </script>
+</body>
+</html>

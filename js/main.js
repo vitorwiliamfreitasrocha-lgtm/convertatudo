@@ -53,6 +53,15 @@ function getNavHTML(base) {
             <a href="${base}/tools/editor-audio.html"><span class="menu-icon">🎛️</span>${T('tools.audioEditor.name')}</a>
           </div>
         </div>
+
+        <div class="nav-dropdown">
+          <a href="#">${T('cat.utils')}</a>
+          <div class="dropdown-menu">
+            <a href="${base}/tools/qrcode.html"><span class="menu-icon">📱</span>${T('tools.qrcode.name')}</a>
+            <a href="${base}/tools/calculadora.html"><span class="menu-icon">🧮</span>${T('tools.calculator.name')}</a>
+            <a href="${base}/tools/gerador-fontes.html"><span class="menu-icon">✨</span>${T('tools.fontGenerator.name')}</a>
+          </div>
+        </div>
       </div>
 
       <button class="nav-hamburger" id="hamburger" aria-label="Menu">
@@ -79,6 +88,8 @@ function getNavHTML(base) {
       <a href="${base}/tools/editor-audio.html">🎛️ ${T('tools.audioEditor.name')}</a>
       <div class="mobile-section-title">${T('cat.utils')}</div>
       <a href="${base}/tools/qrcode.html">📱 ${T('tools.qrcode.name')}</a>
+      <a href="${base}/tools/calculadora.html">🧮 ${T('tools.calculator.name')}</a>
+      <a href="${base}/tools/gerador-fontes.html">✨ ${T('tools.fontGenerator.name')}</a>
       <a href="${base}/tools/cortar-imagem.html">✂️ ${T('tools.cropImg.name')}</a>
       <a href="${base}/tools/comprimir-pdf.html">🗜️ ${T('tools.compressPdf.name')}</a>
       <a href="${base}/tools/dividir-pdf.html">✂️ ${T('tools.splitPdf.name')}</a>

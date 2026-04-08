@@ -14,6 +14,10 @@
     .compare-box canvas, .compare-box img { width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border); background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 16px 16px; }
     .compare-label { font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px; }
     .info-box { background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--radius-sm);padding:12px 16px;font-size:0.85rem;color:#1E40AF; }
+    .info-box.success { background:#DCFCE7;border-color:#86EFAC;color:#166534; }
+    .info-box.error { background:#FEF2F2;border-color:#FECACA;color:#991B1B; }
+    .model-bar-wrap { height:4px; background:#BFDBFE; border-radius:2px; margin-top:8px; overflow:hidden; }
+    .model-bar { height:100%; background:#1E40AF; border-radius:2px; width:0%; transition:width .3s ease; }
     @media(max-width:500px){.compare-grid{grid-template-columns:1fr;}}
   </style>
 </head>
@@ -28,11 +32,13 @@
           <p id="subtitle"></p>
         </div>
 
-
         <div class="tool-layout">
           <div class="tool-main">
 
-            <div class="info-box mb-4" id="model-notice">⏳ <span id="model-notice-text"></span></div>
+            <div class="info-box mb-4" id="model-notice">
+              ⏳ <span id="model-notice-text"></span>
+              <div class="model-bar-wrap"><div class="model-bar" id="model-bar"></div></div>
+            </div>
 
             <div class="card">
               <div class="dropzone" id="dropzone">
@@ -108,142 +114,283 @@
     renderPage('..');
 
     const L = {
-      pt: { title:'Remover Fundo de Imagem', subtitle:'Remova o fundo de qualquer imagem automaticamente com IA. 100% no seu navegador, sem enviar arquivos.', dzTitle:'Arraste e solte uma imagem aqui', dzSub:'Suporta JPG, PNG, WebP', btnSelect:'Selecionar imagem', btnRemove:'✨ Remover fundo', btnDownloadPng:'⬇ Baixar PNG transparente', btnNew:'Nova imagem', compareLabel:'Resultado', lblOriginal:'Original', lblResult:'Sem fundo', progressLbl:'Processando com IA...', resultTitle:'✅ Fundo removido!', resultSub:'Baixe a imagem com fundo transparente (PNG).', modelLoading:'Carregando modelo de IA (~10s na primeira vez)...', modelReady:'✅ Modelo pronto!', lblBgColor:'Fundo de visualização', optTransparent:'Transparente', optWhite:'Branco', optBlack:'Preto', optCustom:'Cor personalizada', lblCustomColor:'Cor de fundo' },
-      en: { title:'Remove Image Background', subtitle:'Automatically remove the background from any image with AI. 100% in your browser, no file uploads.', dzTitle:'Drag & drop an image here', dzSub:'Supports JPG, PNG, WebP', btnSelect:'Select image', btnRemove:'✨ Remove background', btnDownloadPng:'⬇ Download transparent PNG', btnNew:'New image', compareLabel:'Result', lblOriginal:'Original', lblResult:'No background', progressLbl:'Processing with AI...', resultTitle:'✅ Background removed!', resultSub:'Download the image with transparent background (PNG).', modelLoading:'Loading AI model (~10s first time)...', modelReady:'✅ Model ready!', lblBgColor:'Preview background', optTransparent:'Transparent', optWhite:'White', optBlack:'Black', optCustom:'Custom color', lblCustomColor:'Background color' }
+      pt: {
+        title:'Remover Fundo de Imagem',
+        subtitle:'Remova o fundo de qualquer imagem automaticamente com IA. 100% no seu navegador, sem enviar arquivos.',
+        dzTitle:'Arraste e solte uma imagem aqui', dzSub:'Suporta JPG, PNG, WebP',
+        btnSelect:'Selecionar imagem', btnRemove:'✨ Remover fundo',
+        btnDownloadPng:'⬇ Baixar PNG transparente', btnNew:'Nova imagem',
+        compareLabel:'Resultado', lblOriginal:'Original', lblResult:'Sem fundo',
+        progressLbl:'Processando com IA...', resultTitle:'✅ Fundo removido!',
+        resultSub:'Baixe a imagem com fundo transparente (PNG).',
+        modelLoading:'Baixando modelo de IA (primeira vez ~40MB, depois fica em cache)...',
+        modelDownloading:'Baixando modelo de IA: ',
+        modelReady:'✅ Modelo pronto!',
+        modelError:'⚠️ Erro ao carregar modelo. Recarregue a página.',
+        lblBgColor:'Fundo de visualização', optTransparent:'Transparente',
+        optWhite:'Branco', optBlack:'Preto', optCustom:'Cor personalizada',
+        lblCustomColor:'Cor de fundo'
+      },
+      en: {
+        title:'Remove Image Background',
+        subtitle:'Automatically remove the background from any image with AI. 100% in your browser, no file uploads.',
+        dzTitle:'Drag & drop an image here', dzSub:'Supports JPG, PNG, WebP',
+        btnSelect:'Select image', btnRemove:'✨ Remove background',
+        btnDownloadPng:'⬇ Download transparent PNG', btnNew:'New image',
+        compareLabel:'Result', lblOriginal:'Original', lblResult:'No background',
+        progressLbl:'Processing with AI...', resultTitle:'✅ Background removed!',
+        resultSub:'Download the image with transparent background (PNG).',
+        modelLoading:'Downloading AI model (first time ~40MB, then cached)...',
+        modelDownloading:'Downloading AI model: ',
+        modelReady:'✅ Model ready!',
+        modelError:'⚠️ Error loading model. Reload the page.',
+        lblBgColor:'Preview background', optTransparent:'Transparent',
+        optWhite:'White', optBlack:'Black', optCustom:'Custom color',
+        lblCustomColor:'Background color'
+      }
     };
     const S = L[window.LANG] || L.pt;
 
-    document.getElementById('title').textContent           = S.title;
-    document.getElementById('subtitle').textContent        = S.subtitle;
-    document.getElementById('dz-title').textContent        = S.dzTitle;
-    document.getElementById('dz-sub').textContent          = S.dzSub;
-    document.getElementById('btn-select').textContent      = S.btnSelect;
-    document.getElementById('btn-remove').textContent      = S.btnRemove;
-    document.getElementById('btn-download-png').textContent= S.btnDownloadPng;
-    document.getElementById('btn-new').textContent         = S.btnNew;
-    document.getElementById('compare-label').textContent   = S.compareLabel;
-    document.getElementById('lbl-original').textContent    = S.lblOriginal;
-    document.getElementById('lbl-result').textContent      = S.lblResult;
-    document.getElementById('progress-label').textContent  = S.progressLbl;
-    document.getElementById('result-title').textContent    = S.resultTitle;
-    document.getElementById('result-subtitle').textContent = S.resultSub;
-    document.getElementById('model-notice-text').textContent = S.modelLoading;
-    document.getElementById('lbl-bg-color-label').textContent = S.lblBgColor;
-    document.getElementById('opt-transparent').textContent = S.optTransparent;
-    document.getElementById('opt-white').textContent       = S.optWhite;
-    document.getElementById('opt-black').textContent       = S.optBlack;
-    document.getElementById('opt-custom').textContent      = S.optCustom;
-    document.getElementById('lbl-custom-color').textContent= S.lblCustomColor;
+    document.getElementById('title').textContent            = S.title;
+    document.getElementById('subtitle').textContent         = S.subtitle;
+    document.getElementById('dz-title').textContent         = S.dzTitle;
+    document.getElementById('dz-sub').textContent           = S.dzSub;
+    document.getElementById('btn-select').textContent       = S.btnSelect;
+    document.getElementById('btn-remove').textContent       = S.btnRemove;
+    document.getElementById('btn-download-png').textContent = S.btnDownloadPng;
+    document.getElementById('btn-new').textContent          = S.btnNew;
+    document.getElementById('compare-label').textContent    = S.compareLabel;
+    document.getElementById('lbl-original').textContent     = S.lblOriginal;
+    document.getElementById('lbl-result').textContent       = S.lblResult;
+    document.getElementById('progress-label').textContent   = S.progressLbl;
+    document.getElementById('result-title').textContent     = S.resultTitle;
+    document.getElementById('result-subtitle').textContent  = S.resultSub;
+    document.getElementById('model-notice-text').textContent= S.modelLoading;
+    document.getElementById('lbl-bg-color-label').textContent= S.lblBgColor;
+    document.getElementById('opt-transparent').textContent  = S.optTransparent;
+    document.getElementById('opt-white').textContent        = S.optWhite;
+    document.getElementById('opt-black').textContent        = S.optBlack;
+    document.getElementById('opt-custom').textContent       = S.optCustom;
+    document.getElementById('lbl-custom-color').textContent = S.lblCustomColor;
     document.title = S.title + ' — ConverTaTudo';
 
-    // Custom color toggle
+    // Background color toggle
     document.getElementById('bg-color').addEventListener('change', function() {
       document.getElementById('custom-color-group').classList.toggle('hidden', this.value !== 'custom');
-      if (resultImageData) renderResult();
+      if (resultOffscreen) renderResult();
     });
-    document.getElementById('custom-color').addEventListener('input', () => { if (resultImageData) renderResult(); });
+    document.getElementById('custom-color').addEventListener('input', () => {
+      if (resultOffscreen) renderResult();
+    });
 
-    // Load @imgly/background-removal via CDN
-    let bgRemoval = null;
+    // State
+    let aiModel = null;
+    let aiProcessor = null;
+    let RawImage = null;
+    let currentFile = null;
+    let resultOffscreen = null; // canvas with transparent bg (raw AI output)
+
+    // Load @xenova/transformers and the RMBG-1.4 model immediately
     (async () => {
+      const noticeEl = document.getElementById('model-notice');
+      const noticeTxt = document.getElementById('model-notice-text');
+      const modelBar  = document.getElementById('model-bar');
+
       try {
-        // Dynamically import the ESM module
-        const mod = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/index.js');
-        bgRemoval = mod;
-        document.getElementById('model-notice-text').textContent = S.modelReady;
-        setTimeout(() => document.getElementById('model-notice').style.display = 'none', 2000);
+        // Dynamic ESM import — works without SharedArrayBuffer
+        const { AutoModel, AutoProcessor, RawImage: RI, env } = await import(
+          'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2'
+        );
+        RawImage = RI;
+
+        // Force single-threaded WASM to avoid COEP/COOP requirement on GitHub Pages
+        env.allowLocalModels = false;
+        if (env.backends?.onnx?.wasm) {
+          env.backends.onnx.wasm.numThreads = 1;
+        }
+
+        let lastPct = 0;
+        const progressCb = (data) => {
+          if (data.status === 'progress' && data.total > 0) {
+            const pct = Math.round(data.progress ?? (data.loaded / data.total * 100));
+            if (pct > lastPct) {
+              lastPct = pct;
+              modelBar.style.width = pct + '%';
+              noticeTxt.textContent = S.modelDownloading + pct + '%';
+            }
+          }
+        };
+
+        // Load model + processor in parallel
+        [aiModel, aiProcessor] = await Promise.all([
+          AutoModel.from_pretrained('briaai/RMBG-1.4', {
+            config: { model_type: 'custom' },
+            progress_callback: progressCb
+          }),
+          AutoProcessor.from_pretrained('briaai/RMBG-1.4', {
+            config: {
+              do_normalize: true,
+              do_pad: false,
+              do_rescale: true,
+              do_resize: true,
+              image_mean: [0.5, 0.5, 0.5],
+              image_std: [1, 1, 1],
+              resample: 2,
+              rescale_factor: 0.00392156862745098,
+              size: { width: 1024, height: 1024 }
+            }
+          })
+        ]);
+
+        modelBar.style.width = '100%';
+        noticeEl.classList.add('success');
+        noticeTxt.textContent = S.modelReady;
+        setTimeout(() => { noticeEl.style.display = 'none'; }, 2500);
+
         if (currentFile) document.getElementById('btn-remove').disabled = false;
-      } catch(e) {
-        document.getElementById('model-notice-text').textContent = '⚠️ Erro ao carregar modelo. Recarregue a página.';
+
+      } catch (e) {
+        console.error('Model load error:', e);
+        noticeEl.classList.add('error');
+        noticeTxt.textContent = S.modelError;
+        modelBar.style.display = 'none';
       }
     })();
 
-    let currentFile = null;
-    let resultImageData = null;
-
-    initDropzone({ el: document.getElementById('dropzone'), accept: 'image/png,image/jpeg,image/webp', multiple: false, onFiles: (f) => { if(f[0]) loadFile(f[0]); } });
-    document.getElementById('file-input').addEventListener('change', function() { if(this.files[0]) loadFile(this.files[0]); this.value=''; });
+    // Dropzone & file input
+    initDropzone({
+      el: document.getElementById('dropzone'),
+      accept: 'image/png,image/jpeg,image/webp',
+      multiple: false,
+      onFiles: (f) => { if (f[0]) loadFile(f[0]); }
+    });
+    document.getElementById('file-input').addEventListener('change', function() {
+      if (this.files[0]) loadFile(this.files[0]);
+      this.value = '';
+    });
 
     function loadFile(file) {
       currentFile = file;
-      const url = URL.createObjectURL(file);
-      document.getElementById('original-img').src = url;
+      resultOffscreen = null;
+      document.getElementById('original-img').src = URL.createObjectURL(file);
       document.getElementById('compare-section').classList.remove('hidden');
       document.getElementById('result-section').classList.add('hidden');
-      resultImageData = null;
-      if (bgRemoval) document.getElementById('btn-remove').disabled = false;
+      // Reset result canvas
+      const rc = document.getElementById('result-canvas');
+      rc.width = 1; rc.height = 1;
+      rc.getContext('2d').clearRect(0,0,1,1);
+      if (aiModel && aiProcessor) document.getElementById('btn-remove').disabled = false;
     }
 
+    // Remove background
     document.getElementById('btn-remove').addEventListener('click', async () => {
-      if (!currentFile || !bgRemoval) return;
-      document.getElementById('progress-section').classList.remove('hidden');
+      if (!currentFile || !aiModel || !aiProcessor || !RawImage) return;
+
+      const bar  = document.getElementById('progress-bar');
+      const txt  = document.getElementById('progress-text');
+      const prog = document.getElementById('progress-section');
+
+      prog.classList.remove('hidden');
       document.getElementById('result-section').classList.add('hidden');
       document.getElementById('btn-remove').disabled = true;
 
-      const bar = document.getElementById('progress-bar');
-      const txt = document.getElementById('progress-text');
-
-      let prog = 0;
-      const interval = setInterval(() => { prog = Math.min(prog+2, 90); bar.style.width=prog+'%'; txt.textContent=prog+'%'; }, 150);
+      // Animate progress bar while AI processes
+      let pct = 0;
+      bar.style.width = '0%';
+      txt.textContent = '0%';
+      const ticker = setInterval(() => {
+        pct = Math.min(pct + 1, 85);
+        bar.style.width = pct + '%';
+        txt.textContent = pct + '%';
+      }, 80);
 
       try {
-        const blob = await bgRemoval.removeBackground(currentFile, {
-          progress: (key, cur, total) => {
-            if (total > 0) { const p = Math.round((cur/total)*90); bar.style.width=p+'%'; txt.textContent=p+'%'; }
-          }
-        });
-        clearInterval(interval);
-        bar.style.width='100%'; txt.textContent='100%';
+        // Load image as RawImage
+        const objUrl = URL.createObjectURL(currentFile);
+        const image = await RawImage.fromURL(objUrl);
+        URL.revokeObjectURL(objUrl);
 
-        // Draw result on canvas
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.getElementById('result-canvas');
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          const ctx = canvas.getContext('2d');
-          ctx.clearRect(0,0,canvas.width,canvas.height);
-          ctx.drawImage(img,0,0);
-          resultImageData = blob;
-          renderResult();
-          document.getElementById('progress-section').classList.add('hidden');
-          document.getElementById('result-section').classList.remove('hidden');
-          toast(window.LANG==='pt'?'Fundo removido com sucesso!':'Background removed!','success');
-        };
-        img.src = URL.createObjectURL(blob);
-      } catch(e) {
-        clearInterval(interval);
-        document.getElementById('progress-section').classList.add('hidden');
-        toast(window.LANG==='pt'?'Erro ao processar. Tente uma imagem diferente.':'Error processing. Try a different image.','error');
+        // Inference
+        const { pixel_values } = await aiProcessor(image);
+        const { output } = await aiModel({ input: pixel_values });
+
+        // Resize mask to original image dimensions
+        const mask = await RawImage
+          .fromTensor(output[0].mul(255).to('uint8'))
+          .resize(image.width, image.height);
+
+        // Build offscreen canvas: draw image then apply alpha mask
+        const oc = document.createElement('canvas');
+        oc.width  = image.width;
+        oc.height = image.height;
+        const octx = oc.getContext('2d');
+        octx.drawImage(image.toCanvas(), 0, 0);
+        const imgData = octx.getImageData(0, 0, oc.width, oc.height);
+        for (let i = 0; i < mask.data.length; i++) {
+          imgData.data[4 * i + 3] = mask.data[i];
+        }
+        octx.putImageData(imgData, 0, 0);
+        resultOffscreen = oc;
+
+        clearInterval(ticker);
+        bar.style.width = '100%';
+        txt.textContent = '100%';
+        setTimeout(() => prog.classList.add('hidden'), 400);
+
+        // Render to display canvas (with chosen background)
+        renderResult();
+
+        document.getElementById('compare-section').classList.remove('hidden');
+        document.getElementById('result-section').classList.remove('hidden');
+        toast(window.LANG === 'pt' ? 'Fundo removido com sucesso!' : 'Background removed!', 'success');
+
+      } catch (e) {
+        clearInterval(ticker);
+        prog.classList.add('hidden');
+        console.error('Background removal error:', e);
+        toast(
+          window.LANG === 'pt'
+            ? 'Erro ao processar. Tente uma imagem menor ou diferente.'
+            : 'Error processing. Try a smaller or different image.',
+          'error'
+        );
       }
+
       document.getElementById('btn-remove').disabled = false;
     });
 
+    // Render result canvas with selected background color
     function renderResult() {
+      if (!resultOffscreen) return;
       const canvas = document.getElementById('result-canvas');
+      canvas.width  = resultOffscreen.width;
+      canvas.height = resultOffscreen.height;
       const ctx = canvas.getContext('2d');
-      const bgVal = document.getElementById('bg-color').value;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const bgVal = document.getElementById('bg-color').value;
       if (bgVal !== 'transparent') {
-        ctx.fillStyle = bgVal === 'custom' ? document.getElementById('custom-color').value : bgVal;
-        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = bgVal === 'custom'
+          ? document.getElementById('custom-color').value
+          : bgVal;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
-      if (resultImageData) {
-        const img = new Image();
-        img.onload = () => ctx.drawImage(img,0,0);
-        img.src = URL.createObjectURL(resultImageData);
-      }
+      ctx.drawImage(resultOffscreen, 0, 0);
     }
 
+    // Download — always transparent PNG from the offscreen canvas
     document.getElementById('btn-download-png').addEventListener('click', () => {
-      if (!resultImageData) return;
-      const canvas = document.getElementById('result-canvas');
-      canvas.toBlob(blob => downloadBlob(blob, fileBaseName(currentFile.name)+'_sem_fundo.png'), 'image/png');
+      if (!resultOffscreen) return;
+      resultOffscreen.toBlob(
+        blob => downloadBlob(blob, fileBaseName(currentFile.name) + '_sem_fundo.png'),
+        'image/png'
+      );
     });
 
+    // New image
     document.getElementById('btn-new').addEventListener('click', () => {
-      currentFile = null; resultImageData = null;
+      currentFile = null;
+      resultOffscreen = null;
       document.getElementById('compare-section').classList.add('hidden');
       document.getElementById('result-section').classList.add('hidden');
       document.getElementById('btn-remove').disabled = true;
