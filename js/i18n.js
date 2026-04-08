@@ -30,6 +30,7 @@ const TRANSLATIONS = {
       wordToPdf:   { name: 'Word para PDF',          desc: 'Converta documentos .docx em PDF gratuitamente' },
       cropImg:     { name: 'Cortar Imagem',          desc: 'Corte e rotacione suas imagens com precisão' },
       qrcode:      { name: 'Gerador de QR Code',     desc: 'Crie QR Codes para links, WhatsApp, Wi-Fi e mais' },
+      audioEditor: { name: 'Editor de Áudio',         desc: 'Corte, ajuste volume e aplique fades em arquivos de áudio' },
     },
     // Hero
     hero: {
@@ -119,6 +120,7 @@ const TRANSLATIONS = {
       wordToPdf:   { name: 'Word to PDF',          desc: 'Convert .docx documents to PDF for free' },
       cropImg:     { name: 'Crop Image',           desc: 'Crop and rotate your images with precision' },
       qrcode:      { name: 'QR Code Generator',   desc: 'Create QR Codes for links, WhatsApp, Wi-Fi and more' },
+      audioEditor: { name: 'Audio Editor',          desc: 'Cut, adjust volume and apply fades to audio files' },
     },
     hero: {
       badge:    '100% free · 100% in your browser',

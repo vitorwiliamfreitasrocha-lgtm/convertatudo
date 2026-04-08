@@ -29,7 +29,7 @@
 
       <div class="hero-stats">
         <div class="hero-stat">
-          <strong data-i18n="hero.stat1val"></strong>
+          <strong>14+</strong>
           <span data-i18n="hero.stat1lbl"></span>
         </div>
         <div class="hero-stat">
@@ -43,9 +43,15 @@
       </div>
     </section>
 
-    <!-- ── AD: TOP BANNER ── -->
-    <div class="container" style="padding-top:20px;">
-    </div>
+    <!-- ── QUICK ACCESS ── -->
+    <section style="background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:20px 0;">
+      <div class="container">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <span id="qa-label" style="font-size:.8rem;font-weight:600;color:var(--text-secondary);white-space:nowrap;text-transform:uppercase;letter-spacing:.05em;"></span>
+          <div id="quick-access" style="display:flex;gap:8px;flex-wrap:wrap;flex:1;"></div>
+        </div>
+      </div>
+    </section>
 
     <!-- ── IMAGE TOOLS ── -->
     <section class="section">
@@ -214,6 +220,12 @@
             <div class="tool-card-desc" data-i18n="tools.qrcode.desc"></div>
             <span class="tool-card-tag">URL · WhatsApp · Wi-Fi</span>
           </a>
+          <a class="tool-card" href="./tools/editor-audio.html">
+            <div class="tool-card-icon">🎛️</div>
+            <div class="tool-card-title" data-i18n="tools.audioEditor.name"></div>
+            <div class="tool-card-desc" data-i18n="tools.audioEditor.desc"></div>
+            <span class="tool-card-tag">MP3 · WAV · OGG</span>
+          </a>
         </div>
       </div>
     </section>
@@ -231,10 +243,80 @@
   <script src="./js/i18n.js"></script>
   <script src="./js/main.js"></script>
   <script>
-    // Set html lang attribute
     document.documentElement.lang = window.LANG === 'pt' ? 'pt-BR' : 'en';
-    // Render nav + footer + apply i18n
     renderPage('.');
+
+    // ── QUICK ACCESS ──
+    // All tools catalogue
+    const ALL_TOOLS = [
+      { key:'imgToPdf',    icon:'🖼️', href:'./tools/imagem-para-pdf.html' },
+      { key:'compressImg', icon:'🗜️', href:'./tools/comprimir-imagem.html' },
+      { key:'convertImg',  icon:'🔄', href:'./tools/converter-imagem.html' },
+      { key:'removeBg',    icon:'✂️', href:'./tools/remover-fundo.html' },
+      { key:'resizeImg',   icon:'📐', href:'./tools/redimensionar-imagem.html' },
+      { key:'cropImg',     icon:'✂️', href:'./tools/cortar-imagem.html' },
+      { key:'editPdf',     icon:'📝', href:'./tools/editar-pdf.html' },
+      { key:'mergePdf',    icon:'📎', href:'./tools/juntar-pdf.html' },
+      { key:'pdfToImg',    icon:'🖼️', href:'./tools/pdf-para-imagem.html' },
+      { key:'compressPdf', icon:'🗜️', href:'./tools/comprimir-pdf.html' },
+      { key:'splitPdf',    icon:'✂️', href:'./tools/dividir-pdf.html' },
+      { key:'wordToPdf',   icon:'📝', href:'./tools/word-para-pdf.html' },
+      { key:'convertAudio',icon:'🎵', href:'./tools/converter-audio.html' },
+      { key:'convertVideo',icon:'🎬', href:'./tools/converter-video.html' },
+      { key:'qrcode',      icon:'📱', href:'./tools/qrcode.html' },
+      { key:'audioEditor', icon:'🎛️', href:'./tools/editor-audio.html' },
+    ];
+
+    // Default top 5 (before any user data)
+    const DEFAULT_TOP = ['imgToPdf','compressImg','removeBg','wordToPdf','convertAudio'];
+
+    function getUsage() {
+      try { return JSON.parse(localStorage.getItem('ct_usage') || '{}'); } catch(e) { return {}; }
+    }
+
+    function buildQuickAccess() {
+      const usage = getUsage();
+      // Sort by usage count desc, fallback to default order
+      const scored = ALL_TOOLS.map(t => ({ ...t, count: usage[t.key] || 0 }));
+      scored.sort((a, b) => b.count - a.count);
+
+      let top5 = scored.slice(0, 5);
+      // If no usage data yet, use defaults
+      const hasData = Object.keys(usage).length > 0;
+      if (!hasData) {
+        top5 = DEFAULT_TOP.map(k => ALL_TOOLS.find(t => t.key === k));
+      }
+
+      const container = document.getElementById('quick-access');
+      container.innerHTML = '';
+      top5.forEach(tool => {
+        if (!tool) return;
+        const name = t('tools.' + tool.key + '.name');
+        const btn = document.createElement('a');
+        btn.href = tool.href;
+        btn.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;background:var(--bg);border:1px solid var(--border);font-size:.82rem;font-weight:500;color:var(--text);text-decoration:none;transition:var(--transition);white-space:nowrap;';
+        btn.innerHTML = `<span>${tool.icon}</span><span>${name}</span>`;
+        btn.addEventListener('mouseenter', () => { btn.style.borderColor='var(--primary)'; btn.style.color='var(--primary)'; btn.style.background='var(--primary-light)'; });
+        btn.addEventListener('mouseleave', () => { btn.style.borderColor='var(--border)'; btn.style.color='var(--text)'; btn.style.background='var(--bg)'; });
+        container.appendChild(btn);
+      });
+    }
+
+    // Track clicks on tool cards
+    document.querySelectorAll('.tool-card[href]').forEach(card => {
+      const href = card.getAttribute('href');
+      const tool = ALL_TOOLS.find(t => href.includes(t.href.replace('./','')));
+      if (!tool) return;
+      card.addEventListener('click', () => {
+        const usage = getUsage();
+        usage[tool.key] = (usage[tool.key] || 0) + 1;
+        localStorage.setItem('ct_usage', JSON.stringify(usage));
+      });
+    });
+
+    // Label
+    document.getElementById('qa-label').textContent = window.LANG === 'pt' ? '🔥 Mais usados' : '🔥 Most used';
+    buildQuickAccess();
   </script>
 </body>
 </html>

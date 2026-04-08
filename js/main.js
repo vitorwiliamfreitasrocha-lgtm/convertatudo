@@ -50,6 +50,7 @@ function getNavHTML(base) {
           <div class="dropdown-menu">
             <a href="${base}/tools/converter-audio.html"><span class="menu-icon">🎵</span>${T('tools.convertAudio.name')}</a>
             <a href="${base}/tools/converter-video.html"><span class="menu-icon">🎬</span>${T('tools.convertVideo.name')}</a>
+            <a href="${base}/tools/editor-audio.html"><span class="menu-icon">🎛️</span>${T('tools.audioEditor.name')}</a>
           </div>
         </div>
       </div>
@@ -75,6 +76,7 @@ function getNavHTML(base) {
       <div class="mobile-section-title">${T('nav.media')}</div>
       <a href="${base}/tools/converter-audio.html">🎵 ${T('tools.convertAudio.name')}</a>
       <a href="${base}/tools/converter-video.html">🎬 ${T('tools.convertVideo.name')}</a>
+      <a href="${base}/tools/editor-audio.html">🎛️ ${T('tools.audioEditor.name')}</a>
       <div class="mobile-section-title">${T('cat.utils')}</div>
       <a href="${base}/tools/qrcode.html">📱 ${T('tools.qrcode.name')}</a>
       <a href="${base}/tools/cortar-imagem.html">✂️ ${T('tools.cropImg.name')}</a>

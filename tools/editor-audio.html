@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Editor de áudio gratuito no navegador: corte, fade in/out, volume e exportação."/>
+  <title>Editor de Áudio — ConverTaTudo</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2791552825636590" crossorigin="anonymous"></script>
+  <!-- WaveSurfer.js for waveform visualization -->
+  <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+  <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.min.js"></script>
+  <style>
+    #waveform-wrap {
+      background: #111827;
+      border-radius: var(--radius);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    #waveform { width:100%; }
+    #timeline { width:100%; margin-top:4px; }
+
+    .transport {
+      display: flex; align-items:center; justify-content:center;
+      gap: 10px; flex-wrap:wrap; margin-top:12px;
+    }
+    .transport-btn {
+      width:40px; height:40px; border-radius:50%;
+      border:1px solid rgba(255,255,255,.2);
+      background:rgba(255,255,255,.08); color:#fff;
+      font-size:1rem; cursor:pointer; display:flex;
+      align-items:center; justify-content:center;
+      transition:var(--transition);
+    }
+    .transport-btn:hover { background:var(--primary); border-color:var(--primary); }
+    .transport-btn.primary-btn {
+      width:50px; height:50px; font-size:1.2rem;
+      background:var(--primary); border-color:var(--primary);
+    }
+    #time-display {
+      color:rgba(255,255,255,.7); font-size:.8rem;
+      font-family:monospace; min-width:100px; text-align:center;
+    }
+
+    .effect-card {
+      background:var(--bg-secondary); border:1px solid var(--border);
+      border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:10px;
+    }
+    .effect-title {
+      font-size:.85rem; font-weight:600; margin-bottom:10px;
+      display:flex; align-items:center; gap:6px;
+    }
+    .effect-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+    .effect-label { font-size:.8rem; color:var(--text-secondary); min-width:60px; }
+
+    #region-info {
+      font-size:.8rem; color:rgba(255,255,255,.6);
+      text-align:center; margin-top:6px;
+    }
+
+    .waveform-placeholder {
+      display:flex; align-items:center; justify-content:center;
+      height:128px; color:rgba(255,255,255,.3); font-size:.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <main>
+    <div class="tool-page">
+      <div class="container">
+        <div class="tool-header">
+          <a class="tool-header-back" href="../index.html" data-i18n="ui.back"></a>
+          <h1>🎛️ <span id="title"></span></h1>
+          <p id="subtitle"></p>
+        </div>
+
+        <!-- Dropzone (before load) -->
+        <div class="card" id="dropzone-card">
+          <div class="dropzone" id="dropzone">
+            <div class="dropzone-icon">🎵</div>
+            <h3 id="dz-title"></h3>
+            <p id="dz-sub"></p>
+            <input type="file" id="file-input" accept="audio/*"/>
+            <button class="btn btn-primary mt-4" onclick="document.getElementById('file-input').click()" id="btn-select"></button>
+          </div>
+        </div>
+
+        <!-- Editor (after load) -->
+        <div class="hidden" id="editor-wrap">
+          <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start;">
+
+            <!-- LEFT: waveform + transport + effects -->
+            <div style="display:flex;flex-direction:column;gap:16px;">
+
+              <!-- Waveform -->
+              <div class="card" style="padding:16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <div class="card-title" style="border:none;padding:0;margin:0;" id="lbl-waveform"></div>
+                  <button class="btn btn-secondary" style="padding:4px 12px;font-size:.75rem;" id="btn-load-new"></button>
+                </div>
+                <div id="waveform-wrap">
+                  <div id="waveform"></div>
+                  <div id="region-info"></div>
+                </div>
+                <!-- Transport -->
+                <div class="transport">
+                  <button class="transport-btn" id="btn-skip-start" title="Início">⏮</button>
+                  <button class="transport-btn" id="btn-skip-back" title="-5s">⏪</button>
+                  <button class="transport-btn primary-btn" id="btn-play">▶</button>
+                  <button class="transport-btn" id="btn-skip-fwd" title="+5s">⏩</button>
+                  <div id="time-display">0:00 / 0:00</div>
+                  <button class="transport-btn" id="btn-loop" title="Loop" style="font-size:.7rem;">🔁</button>
+                </div>
+              </div>
+
+              <!-- Effects -->
+              <div class="card">
+                <div class="card-title" id="lbl-effects"></div>
+
+                <!-- Volume -->
+                <div class="effect-card">
+                  <div class="effect-title">🔊 <span id="lbl-volume"></span></div>
+                  <div class="effect-row">
+                    <span class="effect-label" id="lbl-vol-master"></span>
+                    <input type="range" id="vol-master" min="0" max="200" value="100" style="flex:1;accent-color:var(--primary);"/>
+                    <span id="vol-master-val" style="font-size:.8rem;font-weight:600;color:var(--primary);min-width:36px;">100%</span>
+                  </div>
+                </div>
+
+                <!-- Fade -->
+                <div class="effect-card">
+                  <div class="effect-title">🌅 <span id="lbl-fade"></span></div>
+                  <div class="effect-row">
+                    <span class="effect-label" id="lbl-fadein"></span>
+                    <input type="range" id="fade-in" min="0" max="10" value="0" step="0.1" style="flex:1;accent-color:var(--primary);"/>
+                    <span id="fade-in-val" style="font-size:.8rem;font-weight:600;color:var(--primary);min-width:36px;">0s</span>
+                  </div>
+                  <div class="effect-row">
+                    <span class="effect-label" id="lbl-fadeout"></span>
+                    <input type="range" id="fade-out" min="0" max="10" value="0" step="0.1" style="flex:1;accent-color:var(--primary);"/>
+                    <span id="fade-out-val" style="font-size:.8rem;font-weight:600;color:var(--primary);min-width:36px;">0s</span>
+                  </div>
+                </div>
+
+                <!-- Trim / Cut -->
+                <div class="effect-card">
+                  <div class="effect-title">✂️ <span id="lbl-trim"></span></div>
+                  <p style="font-size:.8rem;color:var(--text-secondary);margin-bottom:10px;" id="lbl-trim-hint"></p>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-secondary" style="flex:1;" id="btn-trim-keep"></button>
+                    <button class="btn btn-outline" style="flex:1;" id="btn-trim-remove"></button>
+                    <button class="btn btn-secondary" style="font-size:.75rem;padding:6px 10px;" id="btn-clear-region"></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT: export -->
+            <div style="display:flex;flex-direction:column;gap:16px;">
+              <div class="card">
+                <div class="card-title" id="lbl-export-title"></div>
+
+                <div class="form-group">
+                  <label class="form-label" data-i18n="ui.format"></label>
+                  <select class="form-select" id="export-format">
+                    <option value="wav">WAV (sem perda)</option>
+                    <option value="mp3-sim">MP3 (simulado)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" id="lbl-filename"></label>
+                  <input type="text" class="form-input" id="export-filename" placeholder="meu-audio"/>
+                </div>
+
+                <button class="btn btn-primary w-full" id="btn-export"></button>
+              </div>
+
+              <!-- File info -->
+              <div class="card" id="file-info-card">
+                <div class="card-title" id="lbl-file-info"></div>
+                <div id="file-info-content" style="font-size:.82rem;color:var(--text-secondary);line-height:2;"></div>
+              </div>
+
+              <div style="font-size:.8rem;color:var(--text-secondary);text-align:center;" data-i18n="ui.privacyNote"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+  <div id="footer-placeholder"></div>
+
+  <script src="../js/i18n.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.documentElement.lang = window.LANG === 'pt' ? 'pt-BR' : 'en';
+    renderPage('..');
+
+    const L = {
+      pt: {
+        title:'Editor de Áudio', subtitle:'Corte, ajuste o volume, adicione fade in/out e exporte — tudo no navegador.',
+        dzTitle:'Arraste e solte um áudio aqui', dzSub:'Suporta MP3, WAV, OGG, M4A e mais',
+        btnSelect:'Selecionar áudio', btnLoadNew:'Novo arquivo',
+        lblWaveform:'Waveform', lblEffects:'Efeitos',
+        lblVolume:'Volume', lblVolMaster:'Volume',
+        lblFade:'Fade', lblFadeIn:'Fade In', lblFadeOut:'Fade Out',
+        lblTrim:'Cortar', lblTrimHint:'Selecione uma região no waveform arrastando com o mouse.',
+        btnTrimKeep:'Manter seleção', btnTrimRemove:'Remover seleção', btnClearRegion:'Limpar seleção',
+        lblExportTitle:'Exportar', lblFilename:'Nome do arquivo',
+        btnExport:'⬇ Exportar áudio',
+        lblFileInfo:'Informações', regionInfo: (s,e) => `Seleção: ${s}s — ${e}s`,
+        loopOn:'Loop ativado', loopOff:'Loop desativado',
+        exportMsg:'Processando e exportando...',
+        exportDone:'Áudio exportado!',
+        noRegion:'Selecione uma região no waveform primeiro.',
+      },
+      en: {
+        title:'Audio Editor', subtitle:'Cut, adjust volume, add fade in/out and export — all in your browser.',
+        dzTitle:'Drag & drop an audio file here', dzSub:'Supports MP3, WAV, OGG, M4A and more',
+        btnSelect:'Select audio', btnLoadNew:'New file',
+        lblWaveform:'Waveform', lblEffects:'Effects',
+        lblVolume:'Volume', lblVolMaster:'Volume',
+        lblFade:'Fade', lblFadeIn:'Fade In', lblFadeOut:'Fade Out',
+        lblTrim:'Cut', lblTrimHint:'Select a region in the waveform by dragging with your mouse.',
+        btnTrimKeep:'Keep selection', btnTrimRemove:'Remove selection', btnClearRegion:'Clear selection',
+        lblExportTitle:'Export', lblFilename:'File name',
+        btnExport:'⬇ Export audio',
+        lblFileInfo:'Info', regionInfo:(s,e) => `Selection: ${s}s — ${e}s`,
+        loopOn:'Loop on', loopOff:'Loop off',
+        exportMsg:'Processing and exporting...',
+        exportDone:'Audio exported!',
+        noRegion:'Select a region in the waveform first.',
+      }
+    };
+    const S = L[window.LANG] || L.pt;
+
+    // Apply strings
+    document.getElementById('title').textContent           = S.title;
+    document.getElementById('subtitle').textContent        = S.subtitle;
+    document.getElementById('dz-title').textContent        = S.dzTitle;
+    document.getElementById('dz-sub').textContent          = S.dzSub;
+    document.getElementById('btn-select').textContent      = S.btnSelect;
+    document.getElementById('btn-load-new').textContent    = S.btnLoadNew;
+    document.getElementById('lbl-waveform').textContent    = S.lblWaveform;
+    document.getElementById('lbl-effects').textContent     = S.lblEffects;
+    document.getElementById('lbl-volume').textContent      = S.lblVolume;
+    document.getElementById('lbl-vol-master').textContent  = S.lblVolMaster;
+    document.getElementById('lbl-fade').textContent        = S.lblFade;
+    document.getElementById('lbl-fadein').textContent      = S.lblFadeIn;
+    document.getElementById('lbl-fadeout').textContent     = S.lblFadeOut;
+    document.getElementById('lbl-trim').textContent        = S.lblTrim;
+    document.getElementById('lbl-trim-hint').textContent   = S.lblTrimHint;
+    document.getElementById('btn-trim-keep').textContent   = S.btnTrimKeep;
+    document.getElementById('btn-trim-remove').textContent = S.btnTrimRemove;
+    document.getElementById('btn-clear-region').textContent= S.btnClearRegion;
+    document.getElementById('lbl-export-title').textContent= S.lblExportTitle;
+    document.getElementById('lbl-filename').textContent    = S.lblFilename;
+    document.getElementById('btn-export').textContent      = S.btnExport;
+    document.getElementById('lbl-file-info').textContent   = S.lblFileInfo;
+    document.title = S.title + ' — ConverTaTudo';
+
+    // ── State ──
+    let ws = null;               // WaveSurfer instance
+    let wsRegions = null;        // Regions plugin
+    let audioBuffer = null;      // Web Audio buffer (original)
+    let audioCtx = null;
+    let currentFile = null;
+    let loopEnabled = false;
+    let activeRegion = null;
+
+    // Sliders
+    const volSlider = document.getElementById('vol-master');
+    const fiSlider  = document.getElementById('fade-in');
+    const foSlider  = document.getElementById('fade-out');
+
+    volSlider.addEventListener('input', () => {
+      document.getElementById('vol-master-val').textContent = volSlider.value + '%';
+      if (ws) ws.setVolume(parseInt(volSlider.value) / 100);
+    });
+    fiSlider.addEventListener('input', () => document.getElementById('fade-in-val').textContent = fiSlider.value + 's');
+    foSlider.addEventListener('input', () => document.getElementById('fade-out-val').textContent = foSlider.value + 's');
+
+    // ── Dropzone ──
+    initDropzone({ el: document.getElementById('dropzone'), accept: 'audio/*', multiple: false, onFiles: f => { if(f[0]) loadAudio(f[0]); } });
+    document.getElementById('file-input').addEventListener('change', function(){ if(this.files[0]) loadAudio(this.files[0]); this.value=''; });
+    document.getElementById('btn-load-new').addEventListener('click', () => {
+      if (ws) { ws.destroy(); ws = null; }
+      document.getElementById('editor-wrap').classList.add('hidden');
+      document.getElementById('dropzone-card').classList.remove('hidden');
+    });
+
+    async function loadAudio(file) {
+      currentFile = file;
+      document.getElementById('dropzone-card').classList.add('hidden');
+      document.getElementById('editor-wrap').classList.remove('hidden');
+
+      // Setup WaveSurfer
+      if (ws) ws.destroy();
+      wsRegions = WaveSurfer.Regions.create();
+      ws = WaveSurfer.create({
+        container: '#waveform',
+        waveColor: '#4B5563',
+        progressColor: '#DC2626',
+        cursorColor: '#fff',
+        height: 128,
+        plugins: [wsRegions],
+        barWidth: 2,
+        barGap: 1,
+        barRadius: 2,
+      });
+
+      ws.on('ready', () => {
+        updateTimeDisplay();
+        // Decode with Web Audio API for export
+        decodeBuffer(file);
+      });
+      ws.on('timeupdate', updateTimeDisplay);
+      ws.on('finish', () => { document.getElementById('btn-play').textContent = '▶'; });
+
+      wsRegions.on('region-created', region => {
+        // Remove old regions
+        wsRegions.getRegions().forEach(r => { if (r.id !== region.id) r.remove(); });
+        activeRegion = region;
+        updateRegionInfo();
+      });
+      wsRegions.on('region-updated', region => { activeRegion = region; updateRegionInfo(); });
+      wsRegions.enableDragSelection({ color: 'rgba(220,38,38,0.2)' });
+
+      ws.load(URL.createObjectURL(file));
+      document.getElementById('export-filename').value = fileBaseName(file.name);
+
+      // File info
+      document.getElementById('file-info-content').innerHTML =
+        `<div>📄 ${file.name}</div><div>💾 ${formatSize(file.size)}</div><div>🎵 ${file.type || 'audio'}</div>`;
+    }
+
+    async function decodeBuffer(file) {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const ab = await file.arrayBuffer();
+      audioBuffer = await audioCtx.decodeAudioData(ab);
+      // Update duration in file info
+      const dur = audioBuffer.duration;
+      document.getElementById('file-info-content').innerHTML +=
+        `<div>⏱ ${formatTime(dur)}</div><div>📊 ${audioBuffer.sampleRate} Hz</div><div>🎚 ${audioBuffer.numberOfChannels} ch</div>`;
+    }
+
+    function updateTimeDisplay() {
+      if (!ws) return;
+      const cur = ws.getCurrentTime();
+      const dur = ws.getDuration();
+      document.getElementById('time-display').textContent = `${formatTime(cur)} / ${formatTime(dur)}`;
+    }
+
+    function updateRegionInfo() {
+      if (!activeRegion) { document.getElementById('region-info').textContent = ''; return; }
+      const s = activeRegion.start.toFixed(2);
+      const e = activeRegion.end.toFixed(2);
+      document.getElementById('region-info').textContent = S.regionInfo(s, e);
+    }
+
+    function formatTime(s) {
+      const m = Math.floor(s / 60);
+      return `${m}:${String(Math.floor(s % 60)).padStart(2,'0')}`;
+    }
+
+    // Transport
+    document.getElementById('btn-play').addEventListener('click', () => {
+      if (!ws) return;
+      ws.playPause();
+      document.getElementById('btn-play').textContent = ws.isPlaying() ? '⏸' : '▶';
+    });
+    document.getElementById('btn-skip-start').addEventListener('click', () => { if(ws) { ws.seekTo(0); updateTimeDisplay(); } });
+    document.getElementById('btn-skip-back').addEventListener('click', () => { if(ws) { ws.skip(-5); updateTimeDisplay(); } });
+    document.getElementById('btn-skip-fwd').addEventListener('click', () => { if(ws) { ws.skip(5); updateTimeDisplay(); } });
+    document.getElementById('btn-loop').addEventListener('click', () => {
+      loopEnabled = !loopEnabled;
+      document.getElementById('btn-loop').style.background = loopEnabled ? 'var(--primary)' : 'rgba(255,255,255,.08)';
+      toast(loopEnabled ? S.loopOn : S.loopOff, 'info');
+    });
+
+    // Clear region
+    document.getElementById('btn-clear-region').addEventListener('click', () => {
+      wsRegions.clearRegions();
+      activeRegion = null;
+      updateRegionInfo();
+    });
+
+    // ── Trim operations ──
+    document.getElementById('btn-trim-keep').addEventListener('click', () => trimAudio('keep'));
+    document.getElementById('btn-trim-remove').addEventListener('click', () => trimAudio('remove'));
+
+    function trimAudio(mode) {
+      if (!activeRegion || !audioBuffer) { toast(S.noRegion, 'info'); return; }
+      const sr = audioBuffer.sampleRate;
+      const ch = audioBuffer.numberOfChannels;
+      const dur = audioBuffer.duration;
+      let start, end;
+
+      if (mode === 'keep') {
+        start = activeRegion.start;
+        end = activeRegion.end;
+      } else {
+        // Remove middle — keep start + end parts
+        // Simplified: split into two parts and concatenate
+        // For simplicity, we'll just keep everything OUTSIDE the selection
+        start = 0; end = activeRegion.start;
+        // We'll handle this as two separate buffers below
+      }
+
+      if (mode === 'keep') {
+        const startSample = Math.floor(start * sr);
+        const endSample = Math.floor(end * sr);
+        const length = endSample - startSample;
+        const newBuffer = audioCtx.createBuffer(ch, length, sr);
+        for (let c = 0; c < ch; c++) {
+          const data = audioBuffer.getChannelData(c).slice(startSample, endSample);
+          newBuffer.getChannelData(c).set(data);
+        }
+        audioBuffer = newBuffer;
+      } else {
+        // Remove: concatenate [0..regionStart] + [regionEnd..end]
+        const s1 = Math.floor(activeRegion.start * sr);
+        const s2 = Math.floor(activeRegion.end * sr);
+        const totalSamples = audioBuffer.length;
+        const newLength = s1 + (totalSamples - s2);
+        const newBuffer = audioCtx.createBuffer(ch, newLength, sr);
+        for (let c = 0; c < ch; c++) {
+          const src = audioBuffer.getChannelData(c);
+          const dst = newBuffer.getChannelData(c);
+          dst.set(src.slice(0, s1), 0);
+          dst.set(src.slice(s2), s1);
+        }
+        audioBuffer = newBuffer;
+      }
+
+      // Reload waveform from new buffer
+      reloadFromBuffer();
+      wsRegions.clearRegions();
+      activeRegion = null;
+      toast(window.LANG==='pt'?'Áudio cortado!':'Audio trimmed!', 'success');
+    }
+
+    function reloadFromBuffer() {
+      // Convert AudioBuffer back to WAV blob and reload wavesurfer
+      const wavBlob = audioBufferToWav(audioBuffer);
+      const url = URL.createObjectURL(wavBlob);
+      ws.load(url);
+    }
+
+    // ── Export ──
+    document.getElementById('btn-export').addEventListener('click', exportAudio);
+
+    async function exportAudio() {
+      if (!audioBuffer) return;
+      toast(S.exportMsg, 'info');
+      document.getElementById('btn-export').disabled = true;
+
+      const fmt = document.getElementById('export-format').value;
+      const name = (document.getElementById('export-filename').value.trim() || 'audio');
+      const volume = parseInt(volSlider.value) / 100;
+      const fadeInSec = parseFloat(fiSlider.value);
+      const fadeOutSec = parseFloat(foSlider.value);
+
+      // Apply volume + fades to a copy
+      const sr = audioBuffer.sampleRate;
+      const ch = audioBuffer.numberOfChannels;
+      const len = audioBuffer.length;
+      const outBuffer = audioCtx.createBuffer(ch, len, sr);
+
+      for (let c = 0; c < ch; c++) {
+        const src = audioBuffer.getChannelData(c);
+        const dst = outBuffer.getChannelData(c);
+        const fiSamples = Math.floor(fadeInSec * sr);
+        const foSamples = Math.floor(fadeOutSec * sr);
+        for (let i = 0; i < len; i++) {
+          let gain = volume;
+          // Fade in
+          if (i < fiSamples && fiSamples > 0) gain *= i / fiSamples;
+          // Fade out
+          const fromEnd = len - i;
+          if (fromEnd < foSamples && foSamples > 0) gain *= fromEnd / foSamples;
+          dst[i] = src[i] * gain;
+        }
+      }
+
+      const wavBlob = audioBufferToWav(outBuffer);
+      downloadBlob(wavBlob, name + '.wav');
+      toast(S.exportDone, 'success');
+      document.getElementById('btn-export').disabled = false;
+    }
+
+    // ── AudioBuffer → WAV ──
+    function audioBufferToWav(buffer) {
+      const numCh = buffer.numberOfChannels;
+      const sr = buffer.sampleRate;
+      const len = buffer.length;
+      const data = new Float32Array(len * numCh);
+
+      // Interleave channels
+      for (let i = 0; i < len; i++) {
+        for (let c = 0; c < numCh; c++) {
+          data[i * numCh + c] = buffer.getChannelData(c)[i];
+        }
+      }
+
+      const byteLen = data.length * 2; // 16-bit
+      const ab = new ArrayBuffer(44 + byteLen);
+      const view = new DataView(ab);
+
+      // WAV header
+      const writeStr = (o, s) => { for (let i=0;i<s.length;i++) view.setUint8(o+i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF'); view.setUint32(4, 36+byteLen, true);
+      writeStr(8, 'WAVE'); writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+      view.setUint16(22, numCh, true); view.setUint32(24, sr, true);
+      view.setUint32(28, sr * numCh * 2, true); view.setUint16(32, numCh * 2, true);
+      view.setUint16(34, 16, true); writeStr(36, 'data');
+      view.setUint32(40, byteLen, true);
+
+      // PCM data (clamp to 16-bit)
+      let offset = 44;
+      for (let i = 0; i < data.length; i++) {
+        const s = Math.max(-1, Math.min(1, data[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        offset += 2;
+      }
+      return new Blob([ab], { type: 'audio/wav' });
+    }
+  </script>
+</body>
+</html>
