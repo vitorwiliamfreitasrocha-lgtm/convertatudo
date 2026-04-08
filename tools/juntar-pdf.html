@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Junte vários arquivos PDF em um único PDF gratuitamente, direto no navegador."/>
+  <title>Juntar PDFs — ConverTaTudo</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2791552825636590" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <style>
+    .pdf-list { display:flex; flex-direction:column; gap:8px; }
+    .pdf-item { display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--bg-secondary); border-radius:var(--radius-sm); border:1px solid var(--border); cursor:grab; }
+    .pdf-item.dragging { opacity:0.4; }
+    .pdf-item-num { font-size:.75rem; font-weight:700; color:var(--primary); min-width:20px; text-align:center; }
+    .pdf-item-name { flex:1; font-size:.85rem; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .pdf-item-size { font-size:.75rem; color:var(--text-secondary); white-space:nowrap; }
+    .pdf-item-remove { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); font-size:.9rem; transition:var(--transition); cursor:pointer; }
+    .pdf-item-remove:hover { background:var(--primary-light); color:var(--primary); }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <main>
+    <div class="tool-page">
+      <div class="container">
+        <div class="tool-header">
+          <a class="tool-header-back" href="../index.html" data-i18n="ui.back"></a>
+          <h1>📎 <span id="title"></span></h1>
+          <p id="subtitle"></p>
+        </div>
+
+        <div class="tool-layout">
+          <div class="tool-main">
+
+            <div class="card">
+              <div class="dropzone" id="dropzone">
+                <div class="dropzone-icon">📄</div>
+                <h3 id="dz-title"></h3>
+                <p id="dz-sub"></p>
+                <input type="file" id="file-input" accept="application/pdf" multiple/>
+                <button class="btn btn-primary mt-4" onclick="document.getElementById('file-input').click()" id="btn-select"></button>
+              </div>
+            </div>
+
+            <div class="card hidden" id="list-section">
+              <div class="card-title" id="list-label"></div>
+              <div class="pdf-list" id="pdf-list"></div>
+              <div class="mt-4 flex gap-2">
+                <button class="btn btn-secondary" id="btn-add-more" onclick="document.getElementById('file-input').click()"></button>
+                <button class="btn btn-secondary" id="btn-clear"></button>
+              </div>
+            </div>
+
+            <div class="card hidden" id="progress-section">
+              <div class="card-title" id="progress-label"></div>
+              <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+              <div class="progress-label" id="progress-text">0%</div>
+            </div>
+
+            <div class="card result-area hidden" id="result-section">
+              <h3 id="result-title"></h3>
+              <p id="result-subtitle"></p>
+              <button class="btn btn-primary btn-lg" id="btn-download"></button>
+            </div>
+
+          </div>
+
+          <div class="tool-sidebar">
+            <div class="card">
+              <div class="card-title" data-i18n="ui.options"></div>
+              <p style="font-size:.85rem;color:var(--text-secondary);margin-bottom:16px;" id="opt-desc"></p>
+              <button class="btn btn-primary w-full" id="btn-merge" disabled></button>
+            </div>
+            <div style="font-size:.8rem;color:var(--text-secondary);text-align:center;" data-i18n="ui.privacyNote"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <div id="footer-placeholder"></div>
+
+  <script src="../js/i18n.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.documentElement.lang = window.LANG === 'pt' ? 'pt-BR' : 'en';
+    renderPage('..');
+
+    const L = {
+      pt: { title:'Juntar PDFs', subtitle:'Una vários arquivos PDF em um único documento. Arraste para reordenar.', dzTitle:'Arraste e solte PDFs aqui', dzSub:'Selecione 2 ou mais arquivos PDF', btnSelect:'Selecionar PDFs', btnAddMore:'Adicionar mais', btnClear:'Limpar', btnMerge:'Juntar PDFs', btnDownload:'⬇ Baixar PDF combinado', listLabel:'Arquivos (arraste para reordenar)', optDesc:'Os PDFs serão combinados na ordem da lista acima.', progressLbl:'Combinando PDFs...', resultTitle:'✅ PDFs combinados!', resultSub:'Seu PDF unificado está pronto para download.' },
+      en: { title:'Merge PDFs', subtitle:'Combine multiple PDF files into a single document. Drag to reorder.', dzTitle:'Drag & drop PDFs here', dzSub:'Select 2 or more PDF files', btnSelect:'Select PDFs', btnAddMore:'Add more', btnClear:'Clear', btnMerge:'Merge PDFs', btnDownload:'⬇ Download merged PDF', listLabel:'Files (drag to reorder)', optDesc:'PDFs will be combined in the order shown above.', progressLbl:'Merging PDFs...', resultTitle:'✅ PDFs merged!', resultSub:'Your unified PDF is ready to download.' }
+    };
+    const S = L[window.LANG] || L.pt;
+
+    document.getElementById('title').textContent         = S.title;
+    document.getElementById('subtitle').textContent      = S.subtitle;
+    document.getElementById('dz-title').textContent      = S.dzTitle;
+    document.getElementById('dz-sub').textContent        = S.dzSub;
+    document.getElementById('btn-select').textContent    = S.btnSelect;
+    document.getElementById('btn-add-more').textContent  = S.btnAddMore;
+    document.getElementById('btn-clear').textContent     = S.btnClear;
+    document.getElementById('btn-merge').textContent     = S.btnMerge;
+    document.getElementById('btn-download').textContent  = S.btnDownload;
+    document.getElementById('list-label').textContent    = S.listLabel;
+    document.getElementById('opt-desc').textContent      = S.optDesc;
+    document.getElementById('progress-label').textContent= S.progressLbl;
+    document.getElementById('result-title').textContent  = S.resultTitle;
+    document.getElementById('result-subtitle').textContent= S.resultSub;
+    document.title = S.title + ' — ConverTaTudo';
+
+    let files = [];
+    let resultBlob = null;
+
+    initDropzone({ el: document.getElementById('dropzone'), accept: 'application/pdf', multiple: true, onFiles: addFiles });
+    document.getElementById('file-input').addEventListener('change', function() { addFiles(this.files); this.value=''; });
+
+    function addFiles(newFiles) {
+      for (const f of newFiles) if (f.type === 'application/pdf') files.push(f);
+      renderList();
+    }
+
+    function renderList() {
+      const list = document.getElementById('pdf-list');
+      list.innerHTML = '';
+      files.forEach((f, i) => {
+        const el = document.createElement('div');
+        el.className = 'pdf-item'; el.draggable = true; el.dataset.idx = i;
+        el.innerHTML = `<span class="pdf-item-num">${i+1}</span><span class="pdf-item-name">📄 ${f.name}</span><span class="pdf-item-size">${formatSize(f.size)}</span><span class="pdf-item-remove" onclick="removeFile(${i})">✕</span>`;
+        el.addEventListener('dragstart', () => el.classList.add('dragging'));
+        el.addEventListener('dragend', () => { el.classList.remove('dragging'); syncOrder(); });
+        el.addEventListener('dragover', e => { e.preventDefault(); const d = list.querySelector('.dragging'); if (d && d !== el) list.insertBefore(d, el); });
+        list.appendChild(el);
+      });
+      const has = files.length > 0;
+      document.getElementById('list-section').classList.toggle('hidden', !has);
+      document.getElementById('btn-merge').disabled = files.length < 2;
+      document.getElementById('result-section').classList.add('hidden');
+    }
+
+    function syncOrder() {
+      const items = document.querySelectorAll('.pdf-item');
+      const newFiles = [];
+      items.forEach(el => newFiles.push(files[parseInt(el.dataset.idx)]));
+      files = newFiles;
+      renderList();
+    }
+
+    function removeFile(i) { files.splice(i, 1); renderList(); }
+    document.getElementById('btn-clear').addEventListener('click', () => { files = []; renderList(); });
+
+    document.getElementById('btn-merge').addEventListener('click', mergePDFs);
+
+    async function mergePDFs() {
+      if (files.length < 2) return;
+      document.getElementById('progress-section').classList.remove('hidden');
+      document.getElementById('result-section').classList.add('hidden');
+      document.getElementById('btn-merge').disabled = true;
+
+      const bar = document.getElementById('progress-bar');
+      const txt = document.getElementById('progress-text');
+
+      try {
+        const { PDFDocument } = PDFLib;
+        const merged = await PDFDocument.create();
+
+        for (let i = 0; i < files.length; i++) {
+          const bytes = await files[i].arrayBuffer();
+          const pdf = await PDFDocument.load(bytes);
+          const pages = await merged.copyPages(pdf, pdf.getPageIndices());
+          pages.forEach(p => merged.addPage(p));
+          const pct = Math.round(((i+1)/files.length)*100);
+          bar.style.width = pct+'%'; txt.textContent = pct+'%';
+        }
+
+        const bytes = await merged.save();
+        resultBlob = new Blob([bytes], { type:'application/pdf' });
+        document.getElementById('progress-section').classList.add('hidden');
+        document.getElementById('result-section').classList.remove('hidden');
+        toast(window.LANG==='pt'?'PDFs combinados com sucesso!':'PDFs merged successfully!','success');
+      } catch(e) {
+        document.getElementById('progress-section').classList.add('hidden');
+        toast(window.LANG==='pt'?'Erro ao combinar PDFs.':'Error merging PDFs.','error');
+      }
+      document.getElementById('btn-merge').disabled = false;
+    }
+
+    document.getElementById('btn-download').addEventListener('click', () => {
+      if (resultBlob) downloadBlob(resultBlob, 'convertatudo-merged.pdf');
+    });
+  </script>
+</body>
+</html>

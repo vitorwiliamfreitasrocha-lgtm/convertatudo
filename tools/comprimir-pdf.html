@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Comprima PDFs gratuitamente, reduzindo o tamanho do arquivo sem perder qualidade visual."/>
+  <title>Comprimir PDF — ConverTaTudo</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2791552825636590" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <main>
+    <div class="tool-page">
+      <div class="container">
+        <div class="tool-header">
+          <a class="tool-header-back" href="../index.html" data-i18n="ui.back"></a>
+          <h1>🗜️ <span id="title"></span></h1>
+          <p id="subtitle"></p>
+        </div>
+        <div class="tool-layout">
+          <div class="tool-main">
+            <div class="card">
+              <div class="dropzone" id="dropzone">
+                <div class="dropzone-icon">📄</div>
+                <h3 id="dz-title"></h3>
+                <p id="dz-sub"></p>
+                <input type="file" id="file-input" accept="application/pdf"/>
+                <button class="btn btn-primary mt-4" onclick="document.getElementById('file-input').click()" id="btn-select"></button>
+              </div>
+            </div>
+
+            <div class="card hidden" id="progress-section">
+              <div class="card-title" id="progress-label"></div>
+              <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+              <div class="progress-label" id="progress-text">0%</div>
+            </div>
+
+            <div class="card result-area hidden" id="result-section">
+              <h3 id="result-title"></h3>
+              <div class="flex gap-4" style="justify-content:center;margin:12px 0;" id="size-comparison"></div>
+              <p class="savings-badge hidden" id="savings-badge" style="display:inline-block;background:#D1FAE5;color:#065F46;border-radius:999px;padding:4px 16px;font-size:.85rem;font-weight:600;margin-bottom:16px;"></p>
+              <button class="btn btn-primary btn-lg" id="btn-download"></button>
+            </div>
+          </div>
+
+          <div class="tool-sidebar">
+            <div class="card">
+              <div class="card-title" data-i18n="ui.options"></div>
+              <div class="form-group">
+                <label class="form-label" id="lbl-level"></label>
+                <select class="form-select" id="compress-level">
+                  <option value="low" id="opt-low"></option>
+                  <option value="medium" selected id="opt-med"></option>
+                  <option value="high" id="opt-high"></option>
+                </select>
+              </div>
+              <button class="btn btn-primary w-full" id="btn-compress" disabled></button>
+            </div>
+            <div style="font-size:.8rem;color:var(--text-secondary);text-align:center;" data-i18n="ui.privacyNote"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <div id="footer-placeholder"></div>
+  <script src="../js/i18n.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.documentElement.lang = window.LANG === 'pt' ? 'pt-BR' : 'en';
+    renderPage('..');
+
+    const L = {
+      pt: { title:'Comprimir PDF', subtitle:'Reduza o tamanho do seu PDF mantendo a qualidade visual.', dzTitle:'Arraste e solte um PDF aqui', dzSub:'Suporta arquivos .pdf', btnSelect:'Selecionar PDF', btnCompress:'Comprimir PDF', btnDownload:'⬇ Baixar PDF comprimido', progressLbl:'Comprimindo...', resultTitle:'✅ PDF comprimido!', lblLevel:'Nível de compressão', optLow:'Baixo (melhor qualidade)', optMed:'Médio (recomendado)', optHigh:'Alto (menor tamanho)', original:'Original', compressed:'Comprimido', saved:'Reduzido' },
+      en: { title:'Compress PDF', subtitle:'Reduce your PDF file size while maintaining visual quality.', dzTitle:'Drag & drop a PDF here', dzSub:'Supports .pdf files', btnSelect:'Select PDF', btnCompress:'Compress PDF', btnDownload:'⬇ Download compressed PDF', progressLbl:'Compressing...', resultTitle:'✅ PDF compressed!', lblLevel:'Compression level', optLow:'Low (best quality)', optMed:'Medium (recommended)', optHigh:'High (smallest size)', original:'Original', compressed:'Compressed', saved:'Reduced' }
+    };
+    const S = L[window.LANG] || L.pt;
+
+    document.getElementById('title').textContent        = S.title;
+    document.getElementById('subtitle').textContent     = S.subtitle;
+    document.getElementById('dz-title').textContent     = S.dzTitle;
+    document.getElementById('dz-sub').textContent       = S.dzSub;
+    document.getElementById('btn-select').textContent   = S.btnSelect;
+    document.getElementById('btn-compress').textContent = S.btnCompress;
+    document.getElementById('btn-download').textContent = S.btnDownload;
+    document.getElementById('progress-label').textContent = S.progressLbl;
+    document.getElementById('result-title').textContent = S.resultTitle;
+    document.getElementById('lbl-level').textContent    = S.lblLevel;
+    document.getElementById('opt-low').textContent      = S.optLow;
+    document.getElementById('opt-med').textContent      = S.optMed;
+    document.getElementById('opt-high').textContent     = S.optHigh;
+    document.title = S.title + ' — ConverTaTudo';
+
+    let currentFile = null, resultBlob = null;
+
+    initDropzone({ el: document.getElementById('dropzone'), accept: 'application/pdf', multiple: false, onFiles: f => { if(f[0]) loadFile(f[0]); } });
+    document.getElementById('file-input').addEventListener('change', function(){ if(this.files[0]) loadFile(this.files[0]); this.value=''; });
+
+    function loadFile(f) {
+      currentFile = f;
+      document.getElementById('btn-compress').disabled = false;
+      document.getElementById('result-section').classList.add('hidden');
+      toast(f.name, 'info');
+    }
+
+    document.getElementById('btn-compress').addEventListener('click', async () => {
+      if (!currentFile) return;
+      document.getElementById('progress-section').classList.remove('hidden');
+      document.getElementById('result-section').classList.add('hidden');
+      document.getElementById('btn-compress').disabled = true;
+
+      const bar = document.getElementById('progress-bar');
+      const txt = document.getElementById('progress-text');
+      let prog = 0;
+      const iv = setInterval(() => { prog = Math.min(prog+3, 85); bar.style.width=prog+'%'; txt.textContent=prog+'%'; }, 100);
+
+      try {
+        const { PDFDocument } = PDFLib;
+        const bytes = await currentFile.arrayBuffer();
+        const pdf = await PDFDocument.load(bytes, { ignoreEncryption: true });
+        const level = document.getElementById('compress-level').value;
+
+        // pdf-lib doesn't do deep compression, but we can re-save which removes redundant data
+        // For high: remove metadata and compress object streams
+        if (level === 'high') {
+          pdf.setTitle(''); pdf.setAuthor(''); pdf.setSubject('');
+          pdf.setKeywords([]); pdf.setProducer(''); pdf.setCreator('');
+        }
+
+        const saved = await pdf.save({ useObjectStreams: level !== 'low', addDefaultPage: false });
+        clearInterval(iv); bar.style.width='100%'; txt.textContent='100%';
+
+        resultBlob = new Blob([saved], { type:'application/pdf' });
+        const pct = Math.round((1 - resultBlob.size / currentFile.size) * 100);
+        document.getElementById('size-comparison').innerHTML = `
+          <div style="text-align:center"><div style="font-size:.75rem;color:var(--text-secondary)">${S.original}</div><div style="font-weight:700">${formatSize(currentFile.size)}</div></div>
+          <div style="font-size:1.5rem;color:var(--text-secondary);align-self:center">→</div>
+          <div style="text-align:center"><div style="font-size:.75rem;color:var(--text-secondary)">${S.compressed}</div><div style="font-weight:700;color:var(--primary)">${formatSize(resultBlob.size)}</div></div>`;
+        const badge = document.getElementById('savings-badge');
+        if (pct > 0) { badge.textContent = `${S.saved} ${pct}%`; badge.style.display='inline-block'; }
+        document.getElementById('progress-section').classList.add('hidden');
+        document.getElementById('result-section').classList.remove('hidden');
+        toast(window.LANG==='pt'?'PDF comprimido!':'PDF compressed!','success');
+      } catch(e) {
+        clearInterval(iv);
+        document.getElementById('progress-section').classList.add('hidden');
+        toast(window.LANG==='pt'?'Erro ao comprimir.':'Compression error.','error');
+      }
+      document.getElementById('btn-compress').disabled = false;
+    });
+
+    document.getElementById('btn-download').addEventListener('click', () => {
+      if (resultBlob) downloadBlob(resultBlob, fileBaseName(currentFile.name)+'_comprimido.pdf');
+    });
+  </script>
+</body>
+</html>

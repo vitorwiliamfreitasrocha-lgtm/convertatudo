@@ -21,6 +21,15 @@ const TRANSLATIONS = {
       editPdf:     { name: 'Editar PDF',           desc: 'Adicione textos e imagens ao seu PDF' },
       convertAudio:{ name: 'Converter Áudio',      desc: 'Converta MP3, WAV, OGG, M4A e mais' },
       convertVideo:{ name: 'Converter Vídeo',      desc: 'Converta MP4, WebM, AVI, MOV e outros' },
+      removeBg:    { name: 'Remover Fundo',         desc: 'Remova o fundo de imagens automaticamente com IA' },
+      resizeImg:   { name: 'Redimensionar Imagem',  desc: 'Altere o tamanho da imagem em pixels ou porcentagem' },
+      mergePdf:    { name: 'Juntar PDFs',            desc: 'Una vários arquivos PDF em um único documento' },
+      pdfToImg:    { name: 'PDF para Imagem',        desc: 'Converta páginas do PDF em imagens JPG ou PNG' },
+      compressPdf: { name: 'Comprimir PDF',          desc: 'Reduza o tamanho do PDF sem perder qualidade visual' },
+      splitPdf:    { name: 'Dividir PDF',            desc: 'Separe um PDF em páginas individuais ou intervalos' },
+      wordToPdf:   { name: 'Word para PDF',          desc: 'Converta documentos .docx em PDF gratuitamente' },
+      cropImg:     { name: 'Cortar Imagem',          desc: 'Corte e rotacione suas imagens com precisão' },
+      qrcode:      { name: 'Gerador de QR Code',     desc: 'Crie QR Codes para links, WhatsApp, Wi-Fi e mais' },
     },
     // Hero
     hero: {
@@ -39,6 +48,8 @@ const TRANSLATIONS = {
       pdfSub:   'Edite e manipule seus documentos PDF',
       media:    'Áudio e Vídeo',
       mediaSub: 'Converta arquivos de mídia em diferentes formatos',
+      utils:    'Utilidades',
+      utilsSub: 'Ferramentas práticas do dia a dia',
     },
     // Common tool UI
     ui: {
@@ -99,6 +110,15 @@ const TRANSLATIONS = {
       editPdf:     { name: 'Edit PDF',           desc: 'Add text and images to your PDF' },
       convertAudio:{ name: 'Convert Audio',      desc: 'Convert MP3, WAV, OGG, M4A and more' },
       convertVideo:{ name: 'Convert Video',      desc: 'Convert MP4, WebM, AVI, MOV and more' },
+      removeBg:    { name: 'Remove Background',   desc: 'Automatically remove image backgrounds with AI' },
+      resizeImg:   { name: 'Resize Image',         desc: 'Change image dimensions in pixels or percentage' },
+      mergePdf:    { name: 'Merge PDFs',           desc: 'Combine multiple PDF files into one document' },
+      pdfToImg:    { name: 'PDF to Image',         desc: 'Convert PDF pages into JPG or PNG images' },
+      compressPdf: { name: 'Compress PDF',         desc: 'Reduce PDF file size without losing visual quality' },
+      splitPdf:    { name: 'Split PDF',            desc: 'Split a PDF into individual pages or custom ranges' },
+      wordToPdf:   { name: 'Word to PDF',          desc: 'Convert .docx documents to PDF for free' },
+      cropImg:     { name: 'Crop Image',           desc: 'Crop and rotate your images with precision' },
+      qrcode:      { name: 'QR Code Generator',   desc: 'Create QR Codes for links, WhatsApp, Wi-Fi and more' },
     },
     hero: {
       badge:    '100% free · 100% in your browser',
@@ -115,6 +135,8 @@ const TRANSLATIONS = {
       pdfSub:   'Edit and manipulate your PDF documents',
       media:    'Audio & Video',
       mediaSub: 'Convert media files to different formats',
+      utils:    'Utilities',
+      utilsSub: 'Practical everyday tools',
     },
     ui: {
       dragDrop:       'Drag & drop files here',

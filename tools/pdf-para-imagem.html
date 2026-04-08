@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Converta páginas de PDF em imagens JPG ou PNG gratuitamente, direto no navegador."/>
+  <title>PDF para Imagem — ConverTaTudo</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2791552825636590" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <main>
+    <div class="tool-page">
+      <div class="container">
+        <div class="tool-header">
+          <a class="tool-header-back" href="../index.html" data-i18n="ui.back"></a>
+          <h1>🖼️ <span id="title"></span></h1>
+          <p id="subtitle"></p>
+        </div>
+
+        <div class="tool-layout">
+          <div class="tool-main">
+
+            <div class="card">
+              <div class="dropzone" id="dropzone">
+                <div class="dropzone-icon">📄</div>
+                <h3 id="dz-title"></h3>
+                <p id="dz-sub"></p>
+                <input type="file" id="file-input" accept="application/pdf"/>
+                <button class="btn btn-primary mt-4" onclick="document.getElementById('file-input').click()" id="btn-select"></button>
+              </div>
+            </div>
+
+            <div class="card hidden" id="progress-section">
+              <div class="card-title" id="progress-label"></div>
+              <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+              <div class="progress-label" id="progress-text">0%</div>
+            </div>
+
+            <div class="card hidden" id="result-section">
+              <div class="card-title" id="result-label"></div>
+              <div class="preview-grid" id="preview-grid"></div>
+              <div class="mt-4 flex gap-2" style="justify-content:center;">
+                <button class="btn btn-primary" id="btn-download-zip"></button>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="tool-sidebar">
+            <div class="card">
+              <div class="card-title" data-i18n="ui.options"></div>
+
+              <div class="form-group">
+                <label class="form-label" data-i18n="ui.format"></label>
+                <select class="form-select" id="output-format">
+                  <option value="jpeg">JPG</option>
+                  <option value="png">PNG</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" id="lbl-quality"></label>
+                <div class="range-wrap">
+                  <input type="range" id="quality" min="1" max="100" value="90"/>
+                  <span class="range-value" id="quality-val">90%</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" id="lbl-scale"></label>
+                <select class="form-select" id="scale">
+                  <option value="1">1x (rápido)</option>
+                  <option value="1.5" selected>1.5x (recomendado)</option>
+                  <option value="2">2x (alta qualidade)</option>
+                  <option value="3">3x (máxima qualidade)</option>
+                </select>
+              </div>
+
+              <button class="btn btn-primary w-full" id="btn-convert" disabled></button>
+            </div>
+            <div style="font-size:.8rem;color:var(--text-secondary);text-align:center;" data-i18n="ui.privacyNote"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <div id="footer-placeholder"></div>
+
+  <script src="../js/i18n.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.documentElement.lang = window.LANG === 'pt' ? 'pt-BR' : 'en';
+    renderPage('..');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const L = {
+      pt: { title:'PDF para Imagem', subtitle:'Converta cada página do PDF em uma imagem JPG ou PNG.', dzTitle:'Arraste e solte um PDF aqui', dzSub:'Suporta arquivos .pdf', btnSelect:'Selecionar PDF', btnConvert:'Converter páginas', btnZip:'⬇ Baixar todas (.zip)', progressLbl:'Convertendo páginas...', resultLabel:'Páginas convertidas', lblQuality:'Qualidade', lblScale:'Resolução' },
+      en: { title:'PDF to Image', subtitle:'Convert each PDF page into a JPG or PNG image.', dzTitle:'Drag & drop a PDF here', dzSub:'Supports .pdf files', btnSelect:'Select PDF', btnConvert:'Convert pages', btnZip:'⬇ Download all (.zip)', progressLbl:'Converting pages...', resultLabel:'Converted pages', lblQuality:'Quality', lblScale:'Resolution' }
+    };
+    const S = L[window.LANG] || L.pt;
+
+    document.getElementById('title').textContent          = S.title;
+    document.getElementById('subtitle').textContent       = S.subtitle;
+    document.getElementById('dz-title').textContent       = S.dzTitle;
+    document.getElementById('dz-sub').textContent         = S.dzSub;
+    document.getElementById('btn-select').textContent     = S.btnSelect;
+    document.getElementById('btn-convert').textContent    = S.btnConvert;
+    document.getElementById('btn-download-zip').textContent = S.btnZip;
+    document.getElementById('progress-label').textContent = S.progressLbl;
+    document.getElementById('result-label').textContent   = S.resultLabel;
+    document.getElementById('lbl-quality').textContent    = S.lblQuality;
+    document.getElementById('lbl-scale').textContent      = S.lblScale;
+    document.title = S.title + ' — ConverTaTudo';
+
+    const qSlider = document.getElementById('quality');
+    qSlider.addEventListener('input', () => document.getElementById('quality-val').textContent = qSlider.value + '%');
+
+    let currentFile = null;
+    let resultBlobs = [];
+
+    initDropzone({ el: document.getElementById('dropzone'), accept: 'application/pdf', multiple: false, onFiles: (f) => { if(f[0]) loadFile(f[0]); } });
+    document.getElementById('file-input').addEventListener('change', function() { if(this.files[0]) loadFile(this.files[0]); this.value=''; });
+
+    function loadFile(file) {
+      currentFile = file;
+      document.getElementById('btn-convert').disabled = false;
+      document.getElementById('result-section').classList.add('hidden');
+      toast(file.name + ' carregado', 'info');
+    }
+
+    document.getElementById('btn-convert').addEventListener('click', convertPDF);
+
+    async function convertPDF() {
+      if (!currentFile) return;
+      const fmt = document.getElementById('output-format').value;
+      const quality = parseInt(qSlider.value) / 100;
+      const scale = parseFloat(document.getElementById('scale').value);
+
+      document.getElementById('progress-section').classList.remove('hidden');
+      document.getElementById('result-section').classList.add('hidden');
+      document.getElementById('btn-convert').disabled = true;
+      resultBlobs = [];
+
+      const bar = document.getElementById('progress-bar');
+      const txt = document.getElementById('progress-text');
+
+      const bytes = await currentFile.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+      const total = pdf.numPages;
+      const grid = document.getElementById('preview-grid');
+      grid.innerHTML = '';
+
+      for (let i = 1; i <= total; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width; canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+        const blob = await new Promise(r => canvas.toBlob(r, `image/${fmt}`, fmt==='png'?undefined:quality));
+        const url = URL.createObjectURL(blob);
+        const name = `pagina-${String(i).padStart(3,'0')}.${fmt==='jpeg'?'jpg':fmt}`;
+        resultBlobs.push({ blob, name });
+
+        // Add thumb
+        const thumb = document.createElement('div');
+        thumb.className = 'preview-thumb';
+        thumb.innerHTML = `<img src="${url}" alt="Página ${i}"/><div class="preview-thumb-num">${i}</div><a href="${url}" download="${name}" title="Baixar" style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border-radius:4px;padding:2px 6px;font-size:.65rem;">⬇</a>`;
+        grid.appendChild(thumb);
+
+        const pct = Math.round((i/total)*100);
+        bar.style.width = pct+'%'; txt.textContent = pct+'%';
+      }
+
+      document.getElementById('progress-section').classList.add('hidden');
+      document.getElementById('result-section').classList.remove('hidden');
+      document.getElementById('btn-convert').disabled = false;
+      toast(window.LANG==='pt'?`${total} página(s) convertida(s)!`:`${total} page(s) converted!`,'success');
+    }
+
+    document.getElementById('btn-download-zip').addEventListener('click', async () => {
+      if (!resultBlobs.length) return;
+      const zip = new JSZip();
+      resultBlobs.forEach(({ blob, name }) => zip.file(name, blob));
+      const content = await zip.generateAsync({ type:'blob' });
+      downloadBlob(content, 'convertatudo-pdf-imagens.zip');
+    });
+  </script>
+</body>
+</html>

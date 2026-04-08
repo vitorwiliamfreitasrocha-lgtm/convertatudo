@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Converta arquivos Word (DOCX) para PDF gratuitamente, direto no navegador."/>
+  <title>Word para PDF — ConverTaTudo</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2791552825636590" crossorigin="anonymous"></script>
+  <!-- mammoth.js for DOCX parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <style>
+    #doc-preview { border:1px solid var(--border); border-radius:var(--radius-sm); padding:24px 32px; background:#fff; min-height:200px; max-height:500px; overflow-y:auto; font-family:Georgia,serif; font-size:14px; line-height:1.8; color:#1a1a1a; }
+    #doc-preview h1,#doc-preview h2,#doc-preview h3 { margin:12px 0 6px; color:#111; }
+    #doc-preview p { margin:6px 0; }
+    #doc-preview table { border-collapse:collapse; width:100%; margin:12px 0; }
+    #doc-preview td,#doc-preview th { border:1px solid #ccc; padding:6px 10px; }
+    .info-box { background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--radius-sm);padding:12px 16px;font-size:.85rem;color:#1E40AF;margin-bottom:16px; }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <main>
+    <div class="tool-page">
+      <div class="container">
+        <div class="tool-header">
+          <a class="tool-header-back" href="../index.html" data-i18n="ui.back"></a>
+          <h1>📝 <span id="title"></span></h1>
+          <p id="subtitle"></p>
+        </div>
+        <div class="tool-layout">
+          <div class="tool-main">
+            <div class="info-box" id="info-note"></div>
+
+            <div class="card">
+              <div class="dropzone" id="dropzone">
+                <div class="dropzone-icon">📝</div>
+                <h3 id="dz-title"></h3>
+                <p id="dz-sub"></p>
+                <input type="file" id="file-input" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"/>
+                <button class="btn btn-primary mt-4" onclick="document.getElementById('file-input').click()" id="btn-select"></button>
+              </div>
+            </div>
+
+            <div class="card hidden" id="preview-section">
+              <div class="card-title" id="preview-label"></div>
+              <div id="doc-preview"></div>
+            </div>
+
+            <div class="card result-area hidden" id="result-section">
+              <h3 id="result-title"></h3>
+              <p id="result-subtitle"></p>
+              <button class="btn btn-primary btn-lg" id="btn-download"></button>
+            </div>
+          </div>
+
+          <div class="tool-sidebar">
+            <div class="card">
+              <div class="card-title" data-i18n="ui.options"></div>
+              <div class="form-group">
+                <label class="form-label" id="lbl-page-size"></label>
+                <select class="form-select" id="page-size">
+                  <option value="a4">A4</option>
+                  <option value="letter">Letter</option>
+                </select>
+              </div>
+              <button class="btn btn-primary w-full" id="btn-convert" disabled></button>
+            </div>
+            <div style="font-size:.8rem;color:var(--text-secondary);text-align:center;" data-i18n="ui.privacyNote"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <div id="footer-placeholder"></div>
+  <script src="../js/i18n.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.documentElement.lang = window.LANG === 'pt' ? 'pt-BR' : 'en';
+    renderPage('..');
+
+    const L = {
+      pt: { title:'Word para PDF', subtitle:'Converta documentos .docx em PDF. A formatação básica é preservada.', dzTitle:'Arraste e solte um arquivo .docx aqui', dzSub:'Suporta arquivos .docx (Word)', btnSelect:'Selecionar arquivo Word', btnConvert:'Converter para PDF', btnDownload:'⬇ Baixar PDF', previewLabel:'Pré-visualização do documento', resultTitle:'✅ PDF gerado!', resultSub:'Seu documento Word foi convertido para PDF.', lblPageSize:'Tamanho da página', infoNote:'ℹ️ Formatação básica (textos, títulos, tabelas) é preservada. Layouts muito complexos podem variar.' },
+      en: { title:'Word to PDF', subtitle:'Convert .docx documents to PDF. Basic formatting is preserved.', dzTitle:'Drag & drop a .docx file here', dzSub:'Supports .docx (Word) files', btnSelect:'Select Word file', btnConvert:'Convert to PDF', btnDownload:'⬇ Download PDF', previewLabel:'Document preview', resultTitle:'✅ PDF generated!', resultSub:'Your Word document has been converted to PDF.', lblPageSize:'Page size', infoNote:'ℹ️ Basic formatting (text, headings, tables) is preserved. Complex layouts may vary.' }
+    };
+    const S = L[window.LANG] || L.pt;
+
+    document.getElementById('title').textContent         = S.title;
+    document.getElementById('subtitle').textContent      = S.subtitle;
+    document.getElementById('dz-title').textContent      = S.dzTitle;
+    document.getElementById('dz-sub').textContent        = S.dzSub;
+    document.getElementById('btn-select').textContent    = S.btnSelect;
+    document.getElementById('btn-convert').textContent   = S.btnConvert;
+    document.getElementById('btn-download').textContent  = S.btnDownload;
+    document.getElementById('preview-label').textContent = S.previewLabel;
+    document.getElementById('result-title').textContent  = S.resultTitle;
+    document.getElementById('result-subtitle').textContent = S.resultSub;
+    document.getElementById('lbl-page-size').textContent = S.lblPageSize;
+    document.getElementById('info-note').textContent     = S.infoNote;
+    document.title = S.title + ' — ConverTaTudo';
+
+    let htmlContent = '', currentFile = null, resultBlob = null;
+
+    initDropzone({ el: document.getElementById('dropzone'), accept: '.docx', multiple: false, onFiles: f => { if(f[0]) loadFile(f[0]); } });
+    document.getElementById('file-input').addEventListener('change', function(){ if(this.files[0]) loadFile(this.files[0]); this.value=''; });
+
+    async function loadFile(f) {
+      currentFile = f;
+      try {
+        const ab = await f.arrayBuffer();
+        const result = await mammoth.convertToHtml({ arrayBuffer: ab });
+        htmlContent = result.value;
+        document.getElementById('doc-preview').innerHTML = htmlContent;
+        document.getElementById('preview-section').classList.remove('hidden');
+        document.getElementById('result-section').classList.add('hidden');
+        document.getElementById('btn-convert').disabled = false;
+      } catch(e) {
+        toast(window.LANG==='pt'?'Erro ao ler o arquivo.':'Error reading file.','error');
+      }
+    }
+
+    document.getElementById('btn-convert').addEventListener('click', async () => {
+      if (!htmlContent) return;
+      document.getElementById('btn-convert').disabled = true;
+
+      const pageSize = document.getElementById('page-size').value;
+      const dims = { a4: [595, 842], letter: [612, 792] };
+      const [pw, ph] = dims[pageSize];
+
+      // Use print/html2canvas approach via iframe
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'position:fixed;left:-9999px;width:' + pw + 'px;height:' + ph + 'px;';
+      document.body.appendChild(iframe);
+      iframe.contentDocument.write(`<!DOCTYPE html><html><head><style>
+        body{font-family:Georgia,serif;font-size:13px;line-height:1.7;color:#111;margin:40px;padding:0;width:${pw-80}px}
+        h1{font-size:20px;margin:14px 0 8px}h2{font-size:17px;margin:12px 0 6px}h3{font-size:15px;margin:10px 0 5px}
+        p{margin:6px 0}table{border-collapse:collapse;width:100%;margin:10px 0}
+        td,th{border:1px solid #ccc;padding:5px 8px;font-size:12px}
+      </style></head><body>${htmlContent}</body></html>`);
+      iframe.contentDocument.close();
+
+      // Use browser print to PDF as a fallback — trigger window.print on the iframe
+      // Actually, let's use html2canvas + jsPDF dynamically
+      try {
+        const h2c = await import('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.esm.min.js').catch(() => null);
+        const jspdf = await import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.es.min.js').catch(() => null);
+
+        if (h2c && jspdf) {
+          const canvas = await h2c.default(iframe.contentDocument.body, { scale:1.5, useCORS:true });
+          const { jsPDF } = jspdf;
+          const pdf = new jsPDF({ unit:'pt', format:pageSize, orientation:'portrait' });
+          const imgW = pw;
+          const imgH = (canvas.height * pw) / canvas.width;
+          let y = 0;
+          while (y < canvas.height) {
+            const sliceH = Math.min(ph * (canvas.width / pw), canvas.height - y);
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width = canvas.width; sliceCanvas.height = sliceH;
+            sliceCanvas.getContext('2d').drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+            const imgData = sliceCanvas.toDataURL('image/jpeg', 0.9);
+            if (y > 0) pdf.addPage(pageSize, 'portrait');
+            const sliceImgH = sliceH * (pw / canvas.width);
+            pdf.addImage(imgData, 'JPEG', 0, 0, pw, sliceImgH);
+            y += sliceH;
+          }
+          resultBlob = pdf.output('blob');
+        } else {
+          throw new Error('libs not available');
+        }
+      } catch(e) {
+        // Fallback: use Blob with print stylesheet
+        const printHtml = `<!DOCTYPE html><html><head><style>@page{size:${pageSize};margin:2cm}body{font-family:Georgia,serif;font-size:12pt;line-height:1.7}h1{font-size:18pt}h2{font-size:15pt}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:4pt}</style></head><body>${htmlContent}</body></html>`;
+        resultBlob = new Blob([printHtml], { type:'text/html' });
+      }
+
+      document.body.removeChild(iframe);
+      document.getElementById('result-section').classList.remove('hidden');
+      document.getElementById('btn-convert').disabled = false;
+      toast(window.LANG==='pt'?'PDF gerado!':'PDF generated!','success');
+    });
+
+    document.getElementById('btn-download').addEventListener('click', () => {
+      if (!resultBlob) return;
+      const ext = resultBlob.type === 'application/pdf' ? '.pdf' : '.html';
+      downloadBlob(resultBlob, fileBaseName(currentFile.name) + ext);
+    });
+  </script>
+</body>
+</html>

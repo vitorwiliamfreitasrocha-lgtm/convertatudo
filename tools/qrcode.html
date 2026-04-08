@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Gere QR Codes gratuitamente para links, textos, WhatsApp, e-mail e muito mais."/>
+  <title>Gerador de QR Code — ConverTaTudo</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2791552825636590" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    #qr-output { display:flex; align-items:center; justify-content:center; padding:24px; background:#fff; border-radius:var(--radius); border:1px solid var(--border); min-height:200px; }
+    #qr-output canvas, #qr-output img { border-radius:8px; }
+    .type-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+    .type-tab { padding:6px 14px; border-radius:999px; border:1px solid var(--border); font-size:.8rem; font-weight:500; cursor:pointer; transition:var(--transition); background:var(--bg); color:var(--text-secondary); }
+    .type-tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <main>
+    <div class="tool-page">
+      <div class="container">
+        <div class="tool-header">
+          <a class="tool-header-back" href="../index.html" data-i18n="ui.back"></a>
+          <h1>📱 <span id="title"></span></h1>
+          <p id="subtitle"></p>
+        </div>
+
+        <div class="tool-layout">
+          <div class="tool-main">
+            <div class="card">
+              <!-- Type tabs -->
+              <div class="type-tabs" id="type-tabs">
+                <button class="type-tab active" data-type="url">🔗 URL</button>
+                <button class="type-tab" data-type="text">📝 <span id="lbl-tab-text"></span></button>
+                <button class="type-tab" data-type="whatsapp">💬 WhatsApp</button>
+                <button class="type-tab" data-type="email">✉️ E-mail</button>
+                <button class="type-tab" data-type="wifi">📶 Wi-Fi</button>
+              </div>
+
+              <!-- URL -->
+              <div class="tab-panel active" id="panel-url">
+                <div class="form-group">
+                  <label class="form-label" id="lbl-url"></label>
+                  <input type="url" class="form-input" id="inp-url" placeholder="https://convertatudo.com.br"/>
+                </div>
+              </div>
+
+              <!-- Texto -->
+              <div class="tab-panel" id="panel-text">
+                <div class="form-group">
+                  <label class="form-label" id="lbl-text"></label>
+                  <textarea class="form-input" id="inp-text" rows="3" style="resize:vertical;"></textarea>
+                </div>
+              </div>
+
+              <!-- WhatsApp -->
+              <div class="tab-panel" id="panel-whatsapp">
+                <div class="form-group">
+                  <label class="form-label" id="lbl-phone"></label>
+                  <input type="tel" class="form-input" id="inp-phone" placeholder="+5511999999999"/>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" id="lbl-wamsg"></label>
+                  <input type="text" class="form-input" id="inp-wamsg" placeholder="Olá!"/>
+                </div>
+              </div>
+
+              <!-- Email -->
+              <div class="tab-panel" id="panel-email">
+                <div class="form-group">
+                  <label class="form-label">E-mail</label>
+                  <input type="email" class="form-input" id="inp-email" placeholder="contato@exemplo.com"/>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" id="lbl-subject"></label>
+                  <input type="text" class="form-input" id="inp-subject"/>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" id="lbl-body"></label>
+                  <input type="text" class="form-input" id="inp-body"/>
+                </div>
+              </div>
+
+              <!-- WiFi -->
+              <div class="tab-panel" id="panel-wifi">
+                <div class="form-group">
+                  <label class="form-label" id="lbl-ssid">SSID (Nome da rede)</label>
+                  <input type="text" class="form-input" id="inp-ssid"/>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" id="lbl-wifipass"></label>
+                  <input type="password" class="form-input" id="inp-wifipass"/>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Segurança</label>
+                  <select class="form-select" id="inp-security">
+                    <option value="WPA">WPA/WPA2</option>
+                    <option value="WEP">WEP</option>
+                    <option value="nopass">Sem senha</option>
+                  </select>
+                </div>
+              </div>
+
+              <button class="btn btn-primary w-full" id="btn-generate"></button>
+            </div>
+
+            <!-- QR Output -->
+            <div class="card hidden" id="qr-section">
+              <div class="card-title" id="qr-label"></div>
+              <div id="qr-output"><div id="qr-canvas-wrap"></div></div>
+              <div class="flex gap-2 mt-4" style="justify-content:center;flex-wrap:wrap;">
+                <button class="btn btn-primary" id="btn-dl-png"></button>
+                <button class="btn btn-secondary" id="btn-dl-svg"></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tool-sidebar">
+            <div class="card">
+              <div class="card-title" data-i18n="ui.options"></div>
+
+              <div class="form-group">
+                <label class="form-label" id="lbl-size"></label>
+                <select class="form-select" id="qr-size">
+                  <option value="128">128×128</option>
+                  <option value="256" selected>256×256</option>
+                  <option value="512">512×512</option>
+                  <option value="1024">1024×1024 (HD)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" id="lbl-fg"></label>
+                <input type="color" id="qr-fg" value="#000000" style="width:100%;height:36px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;"/>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" id="lbl-bg"></label>
+                <input type="color" id="qr-bg" value="#ffffff" style="width:100%;height:36px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;"/>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" id="lbl-ec"></label>
+                <select class="form-select" id="qr-ec">
+                  <option value="L" id="opt-ec-l"></option>
+                  <option value="M" selected id="opt-ec-m"></option>
+                  <option value="H" id="opt-ec-h"></option>
+                </select>
+              </div>
+            </div>
+            <div style="font-size:.8rem;color:var(--text-secondary);text-align:center;" data-i18n="ui.privacyNote"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <div id="footer-placeholder"></div>
+  <script src="../js/i18n.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.documentElement.lang = window.LANG === 'pt' ? 'pt-BR' : 'en';
+    renderPage('..');
+
+    const L = {
+      pt: { title:'Gerador de QR Code', subtitle:'Gere QR Codes para links, textos, WhatsApp, e-mail e Wi-Fi. Baixe em alta resolução.', lblTabText:'Texto', lblUrl:'URL do site', lblText:'Texto ou mensagem', lblPhone:'Telefone (com código do país)', lblWamsg:'Mensagem (opcional)', lblSubject:'Assunto', lblBody:'Mensagem', lblSsid:'Nome da rede (SSID)', lblWifipass:'Senha', btnGenerate:'Gerar QR Code', qrLabel:'Seu QR Code', btnDlPng:'⬇ Baixar PNG', btnDlSvg:'⬇ Baixar SVG', lblSize:'Tamanho', lblFg:'Cor do QR Code', lblBg:'Cor de fundo', lblEc:'Correção de erro', optEcL:'Baixa (7%)', optEcM:'Média (15%)', optEcH:'Alta (30%)' },
+      en: { title:'QR Code Generator', subtitle:'Generate QR Codes for links, text, WhatsApp, email and Wi-Fi. Download in high resolution.', lblTabText:'Text', lblUrl:'Website URL', lblText:'Text or message', lblPhone:'Phone (with country code)', lblWamsg:'Message (optional)', lblSubject:'Subject', lblBody:'Message', lblSsid:'Network name (SSID)', lblWifipass:'Password', btnGenerate:'Generate QR Code', qrLabel:'Your QR Code', btnDlPng:'⬇ Download PNG', btnDlSvg:'⬇ Download SVG', lblSize:'Size', lblFg:'QR Code color', lblBg:'Background color', lblEc:'Error correction', optEcL:'Low (7%)', optEcM:'Medium (15%)', optEcH:'High (30%)' }
+    };
+    const S = L[window.LANG] || L.pt;
+
+    document.getElementById('title').textContent         = S.title;
+    document.getElementById('subtitle').textContent      = S.subtitle;
+    document.getElementById('lbl-tab-text').textContent  = S.lblTabText;
+    document.getElementById('lbl-url').textContent       = S.lblUrl;
+    document.getElementById('lbl-text').textContent      = S.lblText;
+    document.getElementById('lbl-phone').textContent     = S.lblPhone;
+    document.getElementById('lbl-wamsg').textContent     = S.lblWamsg;
+    document.getElementById('lbl-subject').textContent   = S.lblSubject;
+    document.getElementById('lbl-body').textContent      = S.lblBody;
+    document.getElementById('lbl-ssid').textContent      = S.lblSsid;
+    document.getElementById('lbl-wifipass').textContent  = S.lblWifipass;
+    document.getElementById('btn-generate').textContent  = S.btnGenerate;
+    document.getElementById('qr-label').textContent      = S.qrLabel;
+    document.getElementById('btn-dl-png').textContent    = S.btnDlPng;
+    document.getElementById('btn-dl-svg').textContent    = S.btnDlSvg;
+    document.getElementById('lbl-size').textContent      = S.lblSize;
+    document.getElementById('lbl-fg').textContent        = S.lblFg;
+    document.getElementById('lbl-bg').textContent        = S.lblBg;
+    document.getElementById('lbl-ec').textContent        = S.lblEc;
+    document.getElementById('opt-ec-l').textContent      = S.optEcL;
+    document.getElementById('opt-ec-m').textContent      = S.optEcM;
+    document.getElementById('opt-ec-h').textContent      = S.optEcH;
+    document.title = S.title + ' — ConverTaTudo';
+
+    // Tabs
+    let activeType = 'url';
+    document.querySelectorAll('.type-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.type-tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        activeType = btn.dataset.type;
+        document.getElementById('panel-' + activeType).classList.add('active');
+      });
+    });
+
+    function buildContent() {
+      switch (activeType) {
+        case 'url':    return document.getElementById('inp-url').value.trim() || 'https://convertatudo.com.br';
+        case 'text':   return document.getElementById('inp-text').value.trim() || 'ConverTaTudo';
+        case 'whatsapp': {
+          const ph = document.getElementById('inp-phone').value.replace(/\D/g,'');
+          const msg = encodeURIComponent(document.getElementById('inp-wamsg').value.trim());
+          return `https://wa.me/${ph}${msg?'?text='+msg:''}`;
+        }
+        case 'email': {
+          const em = document.getElementById('inp-email').value.trim();
+          const sub = encodeURIComponent(document.getElementById('inp-subject').value.trim());
+          const bod = encodeURIComponent(document.getElementById('inp-body').value.trim());
+          return `mailto:${em}?subject=${sub}&body=${bod}`;
+        }
+        case 'wifi': {
+          const s = document.getElementById('inp-ssid').value;
+          const p = document.getElementById('inp-wifipass').value;
+          const t = document.getElementById('inp-security').value;
+          return `WIFI:T:${t};S:${s};P:${p};;`;
+        }
+        default: return '';
+      }
+    }
+
+    let qrInstance = null;
+
+    document.getElementById('btn-generate').addEventListener('click', () => {
+      const content = buildContent();
+      if (!content) { toast(window.LANG==='pt'?'Preencha os campos.':'Fill in the fields.','info'); return; }
+      const size = parseInt(document.getElementById('qr-size').value);
+      const fg = document.getElementById('qr-fg').value;
+      const bg = document.getElementById('qr-bg').value;
+      const ec = document.getElementById('qr-ec').value;
+
+      const wrap = document.getElementById('qr-canvas-wrap');
+      wrap.innerHTML = '';
+      qrInstance = new QRCode(wrap, { text: content, width: Math.min(size, 512), height: Math.min(size, 512), colorDark: fg, colorLight: bg, correctLevel: QRCode.CorrectLevel[ec] });
+      document.getElementById('qr-section').classList.remove('hidden');
+      toast(window.LANG==='pt'?'QR Code gerado!':'QR Code generated!','success');
+    });
+
+    document.getElementById('btn-dl-png').addEventListener('click', () => {
+      const canvas = document.querySelector('#qr-canvas-wrap canvas');
+      if (!canvas) return;
+      const size = parseInt(document.getElementById('qr-size').value);
+      // Scale to requested size
+      const out = document.createElement('canvas');
+      out.width = size; out.height = size;
+      out.getContext('2d').drawImage(canvas, 0, 0, size, size);
+      out.toBlob(blob => downloadBlob(blob, 'qrcode.png'), 'image/png');
+    });
+
+    document.getElementById('btn-dl-svg').addEventListener('click', () => {
+      const canvas = document.querySelector('#qr-canvas-wrap canvas');
+      if (!canvas) return;
+      const size = parseInt(document.getElementById('qr-size').value);
+      const dataUrl = canvas.toDataURL('image/png');
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><image href="${dataUrl}" width="${size}" height="${size}"/></svg>`;
+      downloadBlob(new Blob([svg], {type:'image/svg+xml'}), 'qrcode.svg');
+    });
+  </script>
+</body>
+</html>

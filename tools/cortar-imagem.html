@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Corte e rotacione imagens gratuitamente, direto no navegador."/>
+  <title>Cortar Imagem — ConverTaTudo</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2791552825636590" crossorigin="anonymous"></script>
+  <style>
+    #crop-wrap { position:relative; display:inline-block; max-width:100%; user-select:none; cursor:crosshair; }
+    #crop-img { display:block; max-width:100%; max-height:450px; pointer-events:none; }
+    #crop-overlay { position:absolute; top:0; left:0; width:100%; height:100%; }
+    #crop-rect { position:absolute; border:2px solid var(--primary); background:rgba(220,38,38,.1); box-shadow:0 0 0 9999px rgba(0,0,0,.45); }
+    #crop-rect .handle { position:absolute; width:10px; height:10px; background:var(--primary); border-radius:2px; }
+    #crop-rect .handle.nw { top:-5px; left:-5px; cursor:nw-resize; }
+    #crop-rect .handle.ne { top:-5px; right:-5px; cursor:ne-resize; }
+    #crop-rect .handle.sw { bottom:-5px; left:-5px; cursor:sw-resize; }
+    #crop-rect .handle.se { bottom:-5px; right:-5px; cursor:se-resize; }
+    .rotate-bar { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+    .rotate-btn { padding:8px 14px; border-radius:var(--radius-sm); border:1px solid var(--border); font-size:.85rem; cursor:pointer; transition:var(--transition); background:var(--bg); }
+    .rotate-btn:hover { border-color:var(--primary); color:var(--primary); background:var(--primary-light); }
+    .canvas-center { text-align:center; overflow:hidden; }
+    #result-canvas { max-width:100%; border:1px solid var(--border); border-radius:var(--radius-sm); background:repeating-conic-gradient(#ccc 0% 25%,#fff 0% 50%) 0 0/16px 16px; }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <main>
+    <div class="tool-page">
+      <div class="container">
+        <div class="tool-header">
+          <a class="tool-header-back" href="../index.html" data-i18n="ui.back"></a>
+          <h1>✂️ <span id="title"></span></h1>
+          <p id="subtitle"></p>
+        </div>
+        <div class="tool-layout">
+          <div class="tool-main">
+            <div class="card" id="dropzone-card">
+              <div class="dropzone" id="dropzone">
+                <div class="dropzone-icon">✂️</div>
+                <h3 id="dz-title"></h3>
+                <p id="dz-sub"></p>
+                <input type="file" id="file-input" accept="image/*"/>
+                <button class="btn btn-primary mt-4" onclick="document.getElementById('file-input').click()" id="btn-select"></button>
+              </div>
+            </div>
+
+            <div class="card hidden" id="editor-section">
+              <div class="card-title" id="editor-label"></div>
+              <div class="rotate-bar">
+                <button class="rotate-btn" id="btn-rot-l">↺ <span id="lbl-rot-l"></span></button>
+                <button class="rotate-btn" id="btn-rot-r">↻ <span id="lbl-rot-r"></span></button>
+                <button class="rotate-btn" id="btn-flip-h">↔ <span id="lbl-flip-h"></span></button>
+                <button class="rotate-btn" id="btn-flip-v">↕ <span id="lbl-flip-v"></span></button>
+              </div>
+              <div class="canvas-center">
+                <div id="crop-wrap">
+                  <img id="crop-img" src="" alt=""/>
+                  <div id="crop-overlay">
+                    <div id="crop-rect">
+                      <div class="handle nw"></div>
+                      <div class="handle ne"></div>
+                      <div class="handle sw"></div>
+                      <div class="handle se"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="flex gap-2 mt-4" style="flex-wrap:wrap;">
+                <button class="btn btn-primary" id="btn-crop"></button>
+                <button class="btn btn-secondary" id="btn-reset"></button>
+                <button class="btn btn-secondary" id="btn-new-img"></button>
+              </div>
+            </div>
+
+            <div class="card hidden" id="result-section">
+              <div class="card-title" id="result-label"></div>
+              <div class="canvas-center"><canvas id="result-canvas"></canvas></div>
+              <div class="flex gap-2 mt-4" style="justify-content:center;flex-wrap:wrap;">
+                <button class="btn btn-primary" id="btn-download-jpg"></button>
+                <button class="btn btn-secondary" id="btn-download-png"></button>
+                <button class="btn btn-outline" id="btn-back-edit"></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tool-sidebar">
+            <div class="card">
+              <div class="card-title" data-i18n="ui.options"></div>
+              <div class="form-group">
+                <label class="form-label" id="lbl-aspect"></label>
+                <select class="form-select" id="aspect-ratio">
+                  <option value="free" id="opt-free"></option>
+                  <option value="1:1">1:1</option>
+                  <option value="4:3">4:3</option>
+                  <option value="16:9">16:9</option>
+                  <option value="3:4">3:4</option>
+                </select>
+              </div>
+              <div id="crop-info" style="font-size:.8rem;color:var(--text-secondary);margin-top:8px;"></div>
+            </div>
+            <div style="font-size:.8rem;color:var(--text-secondary);text-align:center;" data-i18n="ui.privacyNote"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <div id="footer-placeholder"></div>
+  <script src="../js/i18n.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.documentElement.lang = window.LANG === 'pt' ? 'pt-BR' : 'en';
+    renderPage('..');
+
+    const L = {
+      pt: { title:'Cortar e Rotacionar Imagem', subtitle:'Arraste para selecionar a área de corte. Rotacione e espelhe com os botões.', dzTitle:'Arraste e solte uma imagem aqui', dzSub:'Suporta JPG, PNG, WebP e mais', btnSelect:'Selecionar imagem', btnCrop:'✂️ Cortar', btnReset:'Resetar', btnNewImg:'Nova imagem', btnBackEdit:'← Editar mais', btnDownloadJpg:'⬇ Baixar JPG', btnDownloadPng:'⬇ Baixar PNG', editorLabel:'Selecione a área de corte', resultLabel:'Resultado', lblAspect:'Proporção', optFree:'Livre', lblRotL:'90° esq.', lblRotR:'90° dir.', lblFlipH:'Espelhar H', lblFlipV:'Espelhar V' },
+      en: { title:'Crop & Rotate Image', subtitle:'Drag to select the crop area. Rotate and flip with the buttons.', dzTitle:'Drag & drop an image here', dzSub:'Supports JPG, PNG, WebP and more', btnSelect:'Select image', btnCrop:'✂️ Crop', btnReset:'Reset', btnNewImg:'New image', btnBackEdit:'← Edit more', btnDownloadJpg:'⬇ Download JPG', btnDownloadPng:'⬇ Download PNG', editorLabel:'Select crop area', resultLabel:'Result', lblAspect:'Aspect ratio', optFree:'Free', lblRotL:'90° left', lblRotR:'90° right', lblFlipH:'Flip H', lblFlipV:'Flip V' }
+    };
+    const S = L[window.LANG] || L.pt;
+
+    document.getElementById('title').textContent         = S.title;
+    document.getElementById('subtitle').textContent      = S.subtitle;
+    document.getElementById('dz-title').textContent      = S.dzTitle;
+    document.getElementById('dz-sub').textContent        = S.dzSub;
+    document.getElementById('btn-select').textContent    = S.btnSelect;
+    document.getElementById('btn-crop').textContent      = S.btnCrop;
+    document.getElementById('btn-reset').textContent     = S.btnReset;
+    document.getElementById('btn-new-img').textContent   = S.btnNewImg;
+    document.getElementById('btn-back-edit').textContent = S.btnBackEdit;
+    document.getElementById('btn-download-jpg').textContent = S.btnDownloadJpg;
+    document.getElementById('btn-download-png').textContent = S.btnDownloadPng;
+    document.getElementById('editor-label').textContent  = S.editorLabel;
+    document.getElementById('result-label').textContent  = S.resultLabel;
+    document.getElementById('lbl-aspect').textContent    = S.lblAspect;
+    document.getElementById('opt-free').textContent      = S.optFree;
+    document.getElementById('lbl-rot-l').textContent     = S.lblRotL;
+    document.getElementById('lbl-rot-r').textContent     = S.lblRotR;
+    document.getElementById('lbl-flip-h').textContent    = S.lblFlipH;
+    document.getElementById('lbl-flip-v').textContent    = S.lblFlipV;
+    document.title = S.title + ' — ConverTaTudo';
+
+    // State
+    let img = new Image(), rotation = 0, flipH = false, flipV = false;
+    let currentFile = null;
+    let workCanvas = document.createElement('canvas');
+
+    initDropzone({ el: document.getElementById('dropzone'), accept: 'image/*', multiple: false, onFiles: f => { if(f[0]) loadFile(f[0]); } });
+    document.getElementById('file-input').addEventListener('change', function(){ if(this.files[0]) loadFile(this.files[0]); this.value=''; });
+
+    function loadFile(f) {
+      currentFile = f;
+      rotation = 0; flipH = false; flipV = false;
+      const url = URL.createObjectURL(f);
+      img.onload = () => {
+        drawToWork();
+        applyToEditor();
+        document.getElementById('dropzone-card').classList.add('hidden');
+        document.getElementById('editor-section').classList.remove('hidden');
+        document.getElementById('result-section').classList.add('hidden');
+        resetCropRect();
+      };
+      img.src = url;
+    }
+
+    function drawToWork() {
+      const rad = rotation * Math.PI / 180;
+      const sw = (rotation % 180 === 0) ? img.naturalWidth : img.naturalHeight;
+      const sh = (rotation % 180 === 0) ? img.naturalHeight : img.naturalWidth;
+      workCanvas.width = sw; workCanvas.height = sh;
+      const ctx = workCanvas.getContext('2d');
+      ctx.save();
+      ctx.translate(sw/2, sh/2);
+      ctx.rotate(rad);
+      ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+      ctx.drawImage(img, -img.naturalWidth/2, -img.naturalHeight/2);
+      ctx.restore();
+    }
+
+    function applyToEditor() {
+      document.getElementById('crop-img').src = workCanvas.toDataURL();
+    }
+
+    // Rotation & flip
+    document.getElementById('btn-rot-l').onclick = () => { rotation = (rotation - 90 + 360) % 360; drawToWork(); applyToEditor(); resetCropRect(); };
+    document.getElementById('btn-rot-r').onclick = () => { rotation = (rotation + 90) % 360; drawToWork(); applyToEditor(); resetCropRect(); };
+    document.getElementById('btn-flip-h').onclick = () => { flipH = !flipH; drawToWork(); applyToEditor(); };
+    document.getElementById('btn-flip-v').onclick = () => { flipV = !flipV; drawToWork(); applyToEditor(); };
+
+    // Crop rect drag
+    const cropImg = document.getElementById('crop-img');
+    const cropRect = document.getElementById('crop-rect');
+    let drag = null, startX, startY, startRect;
+
+    function resetCropRect() {
+      const iw = cropImg.offsetWidth, ih = cropImg.offsetHeight;
+      const pad = Math.round(Math.min(iw, ih) * 0.1);
+      setCropRect(pad, pad, iw - pad*2, ih - pad*2);
+    }
+
+    function setCropRect(x, y, w, h) {
+      cropRect.style.left = x+'px'; cropRect.style.top = y+'px';
+      cropRect.style.width = w+'px'; cropRect.style.height = h+'px';
+      updateInfo(w, h);
+    }
+
+    function getCropRect() {
+      return { x: parseInt(cropRect.style.left), y: parseInt(cropRect.style.top), w: parseInt(cropRect.style.width), h: parseInt(cropRect.style.height) };
+    }
+
+    function updateInfo(pw, ph) {
+      const scaleX = workCanvas.width / cropImg.offsetWidth;
+      const scaleY = workCanvas.height / cropImg.offsetHeight;
+      const rw = Math.round(pw * scaleX), rh = Math.round(ph * scaleY);
+      document.getElementById('crop-info').textContent = `${rw} × ${rh} px`;
+    }
+
+    // Mouse events for drag/resize
+    document.getElementById('crop-wrap').addEventListener('mousedown', startDrag);
+    document.addEventListener('mousemove', doDrag);
+    document.addEventListener('mouseup', () => { drag = null; });
+
+    // Touch support
+    document.getElementById('crop-wrap').addEventListener('touchstart', e => { const t = e.touches[0]; startDrag({ target: e.target, clientX: t.clientX, clientY: t.clientY, preventDefault: () => e.preventDefault() }); }, { passive: false });
+    document.addEventListener('touchmove', e => { if (!drag) return; const t = e.touches[0]; doDrag({ clientX: t.clientX, clientY: t.clientY }); }, { passive: true });
+    document.addEventListener('touchend', () => { drag = null; });
+
+    function startDrag(e) {
+      e.preventDefault?.();
+      const wrap = document.getElementById('crop-wrap');
+      const wRect = wrap.getBoundingClientRect();
+      startX = e.clientX - wRect.left;
+      startY = e.clientY - wRect.top;
+      startRect = getCropRect();
+      const cls = e.target.classList;
+      if (cls.contains('handle')) {
+        drag = cls.contains('nw')?'nw':cls.contains('ne')?'ne':cls.contains('sw')?'sw':'se';
+      } else if (e.target === cropRect || e.target.id === 'crop-overlay') {
+        drag = e.target.id === 'crop-overlay' ? 'new' : 'move';
+        if (drag === 'new') { startRect = { x: startX, y: startY, w: 0, h: 0 }; }
+      }
+    }
+
+    function doDrag(e) {
+      if (!drag) return;
+      const wrap = document.getElementById('crop-wrap');
+      const wRect = wrap.getBoundingClientRect();
+      const mx = e.clientX - wRect.left, my = e.clientY - wRect.top;
+      const dx = mx - startX, dy = my - startY;
+      const iw = cropImg.offsetWidth, ih = cropImg.offsetHeight;
+      let { x, y, w, h } = startRect;
+      const aspect = document.getElementById('aspect-ratio').value;
+
+      const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+      if (drag === 'move') {
+        x = clamp(x+dx, 0, iw-w); y = clamp(y+dy, 0, ih-h);
+      } else if (drag === 'new') {
+        x = Math.min(startRect.x, mx); y = Math.min(startRect.y, my);
+        w = Math.abs(mx - startRect.x); h = Math.abs(my - startRect.y);
+        if (aspect !== 'free') { const [ar, br] = aspect.split(':').map(Number); h = w * (br/ar); }
+        x = clamp(x, 0, iw); y = clamp(y, 0, ih);
+        w = clamp(w, 10, iw-x); h = clamp(h, 10, ih-y);
+      } else {
+        if (drag.includes('e')) w = clamp(w+dx, 20, iw-x);
+        if (drag.includes('s')) h = clamp(h+dy, 20, ih-y);
+        if (drag.includes('w')) { const nw = clamp(w-dx, 20, x+w); x = x+w-nw; w = nw; }
+        if (drag.includes('n')) { const nh = clamp(h-dy, 20, y+h); y = y+h-nh; h = nh; }
+        if (aspect !== 'free') { const [ar, br] = aspect.split(':').map(Number); h = w * (br/ar); }
+      }
+      setCropRect(x, y, w, h);
+    }
+
+    document.getElementById('btn-crop').onclick = () => {
+      const { x, y, w, h } = getCropRect();
+      const scaleX = workCanvas.width / cropImg.offsetWidth;
+      const scaleY = workCanvas.height / cropImg.offsetHeight;
+      const rc = document.getElementById('result-canvas');
+      rc.width = Math.round(w * scaleX);
+      rc.height = Math.round(h * scaleY);
+      rc.getContext('2d').drawImage(workCanvas, Math.round(x*scaleX), Math.round(y*scaleY), rc.width, rc.height, 0, 0, rc.width, rc.height);
+      document.getElementById('editor-section').classList.add('hidden');
+      document.getElementById('result-section').classList.remove('hidden');
+      toast(window.LANG==='pt'?'Imagem cortada!':'Image cropped!','success');
+    };
+
+    document.getElementById('btn-reset').onclick = resetCropRect;
+
+    document.getElementById('btn-back-edit').onclick = () => {
+      document.getElementById('result-section').classList.add('hidden');
+      document.getElementById('editor-section').classList.remove('hidden');
+    };
+
+    document.getElementById('btn-new-img').onclick = () => {
+      document.getElementById('editor-section').classList.add('hidden');
+      document.getElementById('dropzone-card').classList.remove('hidden');
+    };
+
+    function downloadResult(fmt) {
+      const rc = document.getElementById('result-canvas');
+      const q = fmt === 'jpeg' ? 0.92 : undefined;
+      rc.toBlob(blob => downloadBlob(blob, fileBaseName(currentFile.name)+'_cortado.'+(fmt==='jpeg'?'jpg':fmt)), 'image/'+fmt, q);
+    }
+
+    document.getElementById('btn-download-jpg').onclick = () => downloadResult('jpeg');
+    document.getElementById('btn-download-png').onclick = () => downloadResult('png');
+  </script>
+</body>
+</html>

@@ -27,6 +27,9 @@ function getNavHTML(base) {
             <a href="${base}/tools/imagem-para-pdf.html"><span class="menu-icon">🖼️</span>${T('tools.imgToPdf.name')}</a>
             <a href="${base}/tools/comprimir-imagem.html"><span class="menu-icon">🗜️</span>${T('tools.compressImg.name')}</a>
             <a href="${base}/tools/converter-imagem.html"><span class="menu-icon">🔄</span>${T('tools.convertImg.name')}</a>
+            <a href="${base}/tools/remover-fundo.html"><span class="menu-icon">✂️</span>${T('tools.removeBg.name')}</a>
+            <a href="${base}/tools/redimensionar-imagem.html"><span class="menu-icon">📐</span>${T('tools.resizeImg.name')}</a>
+            <a href="${base}/tools/cortar-imagem.html"><span class="menu-icon">✂️</span>${T('tools.cropImg.name')}</a>
           </div>
         </div>
 
@@ -34,6 +37,11 @@ function getNavHTML(base) {
           <a href="#">${T('nav.pdf')}</a>
           <div class="dropdown-menu">
             <a href="${base}/tools/editar-pdf.html"><span class="menu-icon">📝</span>${T('tools.editPdf.name')}</a>
+            <a href="${base}/tools/juntar-pdf.html"><span class="menu-icon">📎</span>${T('tools.mergePdf.name')}</a>
+            <a href="${base}/tools/pdf-para-imagem.html"><span class="menu-icon">🖼️</span>${T('tools.pdfToImg.name')}</a>
+            <a href="${base}/tools/comprimir-pdf.html"><span class="menu-icon">🗜️</span>${T('tools.compressPdf.name')}</a>
+            <a href="${base}/tools/dividir-pdf.html"><span class="menu-icon">✂️</span>${T('tools.splitPdf.name')}</a>
+            <a href="${base}/tools/word-para-pdf.html"><span class="menu-icon">📝</span>${T('tools.wordToPdf.name')}</a>
           </div>
         </div>
 
@@ -58,11 +66,21 @@ function getNavHTML(base) {
       <a href="${base}/tools/imagem-para-pdf.html">🖼️ ${T('tools.imgToPdf.name')}</a>
       <a href="${base}/tools/comprimir-imagem.html">🗜️ ${T('tools.compressImg.name')}</a>
       <a href="${base}/tools/converter-imagem.html">🔄 ${T('tools.convertImg.name')}</a>
+      <a href="${base}/tools/remover-fundo.html">✂️ ${T('tools.removeBg.name')}</a>
+      <a href="${base}/tools/redimensionar-imagem.html">📐 ${T('tools.resizeImg.name')}</a>
       <div class="mobile-section-title">${T('nav.pdf')}</div>
       <a href="${base}/tools/editar-pdf.html">📝 ${T('tools.editPdf.name')}</a>
+      <a href="${base}/tools/juntar-pdf.html">📎 ${T('tools.mergePdf.name')}</a>
+      <a href="${base}/tools/pdf-para-imagem.html">🖼️ ${T('tools.pdfToImg.name')}</a>
       <div class="mobile-section-title">${T('nav.media')}</div>
       <a href="${base}/tools/converter-audio.html">🎵 ${T('tools.convertAudio.name')}</a>
       <a href="${base}/tools/converter-video.html">🎬 ${T('tools.convertVideo.name')}</a>
+      <div class="mobile-section-title">${T('cat.utils')}</div>
+      <a href="${base}/tools/qrcode.html">📱 ${T('tools.qrcode.name')}</a>
+      <a href="${base}/tools/cortar-imagem.html">✂️ ${T('tools.cropImg.name')}</a>
+      <a href="${base}/tools/comprimir-pdf.html">🗜️ ${T('tools.compressPdf.name')}</a>
+      <a href="${base}/tools/dividir-pdf.html">✂️ ${T('tools.splitPdf.name')}</a>
+      <a href="${base}/tools/word-para-pdf.html">📝 ${T('tools.wordToPdf.name')}</a>
     </div>
   </nav>`;
 }

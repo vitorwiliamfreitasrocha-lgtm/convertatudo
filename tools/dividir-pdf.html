@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Divida um PDF em páginas individuais ou intervalos de páginas gratuitamente."/>
+  <title>Dividir PDF — ConverTaTudo</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2791552825636590" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <main>
+    <div class="tool-page">
+      <div class="container">
+        <div class="tool-header">
+          <a class="tool-header-back" href="../index.html" data-i18n="ui.back"></a>
+          <h1>✂️ <span id="title"></span></h1>
+          <p id="subtitle"></p>
+        </div>
+        <div class="tool-layout">
+          <div class="tool-main">
+            <div class="card">
+              <div class="dropzone" id="dropzone">
+                <div class="dropzone-icon">📄</div>
+                <h3 id="dz-title"></h3>
+                <p id="dz-sub"></p>
+                <input type="file" id="file-input" accept="application/pdf"/>
+                <button class="btn btn-primary mt-4" onclick="document.getElementById('file-input').click()" id="btn-select"></button>
+              </div>
+            </div>
+
+            <div class="card hidden" id="info-section">
+              <div class="card-title" id="file-label"></div>
+              <div class="file-list" id="file-info"></div>
+            </div>
+
+            <div class="card hidden" id="progress-section">
+              <div class="card-title" id="progress-label"></div>
+              <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+              <div class="progress-label" id="progress-text">0%</div>
+            </div>
+
+            <div class="card result-area hidden" id="result-section">
+              <h3 id="result-title"></h3>
+              <p id="result-subtitle"></p>
+              <div class="file-list" id="result-list" style="text-align:left;margin-bottom:16px;max-height:300px;overflow-y:auto;"></div>
+              <button class="btn btn-primary btn-lg" id="btn-download-zip"></button>
+            </div>
+          </div>
+
+          <div class="tool-sidebar">
+            <div class="card">
+              <div class="card-title" data-i18n="ui.options"></div>
+              <div class="form-group">
+                <label class="form-label" id="lbl-mode"></label>
+                <select class="form-select" id="split-mode">
+                  <option value="all" id="opt-all"></option>
+                  <option value="range" id="opt-range"></option>
+                </select>
+              </div>
+              <div class="form-group hidden" id="range-group">
+                <label class="form-label" id="lbl-range"></label>
+                <input type="text" class="form-input" id="range-input" placeholder="ex: 1-3, 5, 7-9"/>
+                <p style="font-size:.75rem;color:var(--text-secondary);margin-top:4px;" id="range-hint"></p>
+              </div>
+              <button class="btn btn-primary w-full" id="btn-split" disabled></button>
+            </div>
+            <div style="font-size:.8rem;color:var(--text-secondary);text-align:center;" data-i18n="ui.privacyNote"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <div id="footer-placeholder"></div>
+  <script src="../js/i18n.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.documentElement.lang = window.LANG === 'pt' ? 'pt-BR' : 'en';
+    renderPage('..');
+
+    const L = {
+      pt: { title:'Dividir PDF', subtitle:'Separe um PDF em páginas individuais ou extraia intervalos de páginas.', dzTitle:'Arraste e solte um PDF aqui', dzSub:'Suporta arquivos .pdf', btnSelect:'Selecionar PDF', btnSplit:'Dividir PDF', btnZip:'⬇ Baixar todos (.zip)', progressLbl:'Dividindo PDF...', resultTitle:'✅ PDF dividido!', resultSub:'Baixe individualmente ou todos de uma vez.', lblMode:'Modo de divisão', optAll:'Uma página por arquivo', optRange:'Intervalos personalizados', lblRange:'Páginas (ex: 1-3, 5, 7-9)', rangeHint:'Separe intervalos por vírgula.', fileLabel:'Arquivo carregado', pages:'páginas' },
+      en: { title:'Split PDF', subtitle:'Split a PDF into individual pages or extract custom page ranges.', dzTitle:'Drag & drop a PDF here', dzSub:'Supports .pdf files', btnSelect:'Select PDF', btnSplit:'Split PDF', btnZip:'⬇ Download all (.zip)', progressLbl:'Splitting PDF...', resultTitle:'✅ PDF split!', resultSub:'Download individually or all at once.', lblMode:'Split mode', optAll:'One page per file', optRange:'Custom ranges', lblRange:'Pages (e.g. 1-3, 5, 7-9)', rangeHint:'Separate ranges with commas.', fileLabel:'Loaded file', pages:'pages' }
+    };
+    const S = L[window.LANG] || L.pt;
+
+    document.getElementById('title').textContent          = S.title;
+    document.getElementById('subtitle').textContent       = S.subtitle;
+    document.getElementById('dz-title').textContent       = S.dzTitle;
+    document.getElementById('dz-sub').textContent         = S.dzSub;
+    document.getElementById('btn-select').textContent     = S.btnSelect;
+    document.getElementById('btn-split').textContent      = S.btnSplit;
+    document.getElementById('btn-download-zip').textContent = S.btnZip;
+    document.getElementById('progress-label').textContent = S.progressLbl;
+    document.getElementById('result-title').textContent   = S.resultTitle;
+    document.getElementById('result-subtitle').textContent= S.resultSub;
+    document.getElementById('lbl-mode').textContent       = S.lblMode;
+    document.getElementById('opt-all').textContent        = S.optAll;
+    document.getElementById('opt-range').textContent      = S.optRange;
+    document.getElementById('lbl-range').textContent      = S.lblRange;
+    document.getElementById('range-hint').textContent     = S.rangeHint;
+    document.getElementById('file-label').textContent     = S.fileLabel;
+    document.getElementById('range-input').placeholder    = window.LANG==='pt'?'ex: 1-3, 5, 7-9':'e.g. 1-3, 5, 7-9';
+    document.title = S.title + ' — ConverTaTudo';
+
+    document.getElementById('split-mode').addEventListener('change', function(){
+      document.getElementById('range-group').classList.toggle('hidden', this.value !== 'range');
+    });
+
+    let currentFile = null, totalPages = 0, resultBlobs = [];
+
+    initDropzone({ el: document.getElementById('dropzone'), accept: 'application/pdf', multiple: false, onFiles: f => { if(f[0]) loadFile(f[0]); } });
+    document.getElementById('file-input').addEventListener('change', function(){ if(this.files[0]) loadFile(this.files[0]); this.value=''; });
+
+    async function loadFile(f) {
+      currentFile = f;
+      const { PDFDocument } = PDFLib;
+      const pdf = await PDFDocument.load(await f.arrayBuffer());
+      totalPages = pdf.getPageCount();
+      document.getElementById('file-info').innerHTML = `<div class="file-item"><span class="file-item-icon">📄</span><span class="file-item-name">${f.name}</span><span class="file-item-size">${totalPages} ${S.pages} · ${formatSize(f.size)}</span></div>`;
+      document.getElementById('info-section').classList.remove('hidden');
+      document.getElementById('btn-split').disabled = false;
+      document.getElementById('result-section').classList.add('hidden');
+    }
+
+    document.getElementById('btn-split').addEventListener('click', splitPDF);
+
+    function parseRanges(str, max) {
+      const pages = new Set();
+      str.split(',').forEach(part => {
+        part = part.trim();
+        if (part.includes('-')) {
+          const [a, b] = part.split('-').map(Number);
+          for (let i = a; i <= Math.min(b, max); i++) if (i >= 1) pages.add(i);
+        } else {
+          const n = parseInt(part);
+          if (n >= 1 && n <= max) pages.add(n);
+        }
+      });
+      return [...pages].sort((a,b) => a-b);
+    }
+
+    async function splitPDF() {
+      if (!currentFile) return;
+      const { PDFDocument } = PDFLib;
+      const mode = document.getElementById('split-mode').value;
+      const bytes = await currentFile.arrayBuffer();
+      const srcPdf = await PDFDocument.load(bytes);
+
+      let ranges = [];
+      if (mode === 'all') {
+        for (let i = 1; i <= totalPages; i++) ranges.push([i]);
+      } else {
+        const raw = document.getElementById('range-input').value;
+        if (!raw.trim()) { toast(window.LANG==='pt'?'Digite os intervalos.':'Enter the ranges.','info'); return; }
+        const pages = parseRanges(raw, totalPages);
+        ranges = pages.map(p => [p]);
+      }
+
+      document.getElementById('progress-section').classList.remove('hidden');
+      document.getElementById('result-section').classList.add('hidden');
+      document.getElementById('btn-split').disabled = true;
+      resultBlobs = [];
+
+      const bar = document.getElementById('progress-bar');
+      const txt = document.getElementById('progress-text');
+
+      for (let i = 0; i < ranges.length; i++) {
+        const newPdf = await PDFDocument.create();
+        const copied = await newPdf.copyPages(srcPdf, ranges[i].map(p => p-1));
+        copied.forEach(p => newPdf.addPage(p));
+        const saved = await newPdf.save();
+        const blob = new Blob([saved], { type:'application/pdf' });
+        const name = `${fileBaseName(currentFile.name)}_pg${ranges[i].join('-')}.pdf`;
+        resultBlobs.push({ blob, name });
+        const pct = Math.round(((i+1)/ranges.length)*100);
+        bar.style.width = pct+'%'; txt.textContent = pct+'%';
+      }
+
+      const list = document.getElementById('result-list');
+      list.innerHTML = '';
+      resultBlobs.forEach(({ blob, name }) => {
+        const url = URL.createObjectURL(blob);
+        const row = document.createElement('div');
+        row.className = 'file-item';
+        row.innerHTML = `<span class="file-item-icon">📄</span><span class="file-item-name">${name}</span><span class="file-item-size">${formatSize(blob.size)}</span><a href="${url}" download="${name}" class="btn btn-secondary" style="padding:4px 10px;font-size:.75rem;">⬇</a>`;
+        list.appendChild(row);
+      });
+
+      document.getElementById('progress-section').classList.add('hidden');
+      document.getElementById('result-section').classList.remove('hidden');
+      document.getElementById('btn-split').disabled = false;
+      toast(window.LANG==='pt'?`${resultBlobs.length} arquivo(s) gerado(s)!`:`${resultBlobs.length} file(s) generated!`,'success');
+    }
+
+    document.getElementById('btn-download-zip').addEventListener('click', async () => {
+      const zip = new JSZip();
+      resultBlobs.forEach(({ blob, name }) => zip.file(name, blob));
+      const content = await zip.generateAsync({ type:'blob' });
+      downloadBlob(content, fileBaseName(currentFile.name)+'_dividido.zip');
+    });
+  </script>
+</body>
+</html>

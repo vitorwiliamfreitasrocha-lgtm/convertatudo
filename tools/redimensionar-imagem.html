@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Redimensione imagens gratuitamente, mantendo ou não a proporção original."/>
+  <title>Redimensionar Imagem — ConverTaTudo</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2791552825636590" crossorigin="anonymous"></script>
+  <style>
+    .dim-row { display:flex; gap:10px; align-items:center; }
+    .dim-row input { flex:1; }
+    .dim-sep { font-weight:700; color:var(--text-secondary); }
+    .preview-img { max-width:100%; max-height:320px; object-fit:contain; border-radius:var(--radius-sm); border:1px solid var(--border); display:block; margin:0 auto; }
+    .info-row { display:flex; gap:16px; flex-wrap:wrap; font-size:.85rem; color:var(--text-secondary); margin-top:8px; }
+    .info-row strong { color:var(--text); }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <main>
+    <div class="tool-page">
+      <div class="container">
+        <div class="tool-header">
+          <a class="tool-header-back" href="../index.html" data-i18n="ui.back"></a>
+          <h1>📐 <span id="title"></span></h1>
+          <p id="subtitle"></p>
+        </div>
+
+
+        <div class="tool-layout">
+          <div class="tool-main">
+
+            <div class="card">
+              <div class="dropzone" id="dropzone">
+                <div class="dropzone-icon">📐</div>
+                <h3 id="dz-title"></h3>
+                <p id="dz-sub"></p>
+                <input type="file" id="file-input" accept="image/*"/>
+                <button class="btn btn-primary mt-4" onclick="document.getElementById('file-input').click()" id="btn-select"></button>
+              </div>
+            </div>
+
+            <div class="card hidden" id="preview-section">
+              <div class="card-title" id="preview-label"></div>
+              <img id="preview-img" class="preview-img" src="" alt="preview"/>
+              <div class="info-row" id="info-row"></div>
+            </div>
+
+            <div class="card result-area hidden" id="result-section">
+              <h3 id="result-title"></h3>
+              <img id="result-img" class="preview-img" src="" alt="result"/>
+              <div class="info-row" id="result-info-row" style="justify-content:center;margin-top:10px;"></div>
+              <button class="btn btn-primary btn-lg mt-4" id="btn-download"></button>
+            </div>
+
+          </div>
+
+          <div class="tool-sidebar">
+            <div class="card">
+              <div class="card-title" data-i18n="ui.options"></div>
+
+              <div class="form-group">
+                <label class="form-label" id="lbl-mode"></label>
+                <select class="form-select" id="resize-mode">
+                  <option value="pixels" id="opt-pixels"></option>
+                  <option value="percent" id="opt-percent"></option>
+                </select>
+              </div>
+
+              <div class="form-group" id="group-pixels">
+                <label class="form-label" id="lbl-dimensions"></label>
+                <div class="dim-row">
+                  <input type="number" class="form-input" id="inp-width" min="1" max="8000" placeholder="W"/>
+                  <span class="dim-sep">×</span>
+                  <input type="number" class="form-input" id="inp-height" min="1" max="8000" placeholder="H"/>
+                </div>
+              </div>
+
+              <div class="form-group hidden" id="group-percent">
+                <label class="form-label" id="lbl-percent"></label>
+                <div class="range-wrap">
+                  <input type="range" id="percent-slider" min="1" max="200" value="50"/>
+                  <span class="range-value" id="percent-val">50%</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.875rem;">
+                  <input type="checkbox" id="keep-ratio" checked style="accent-color:var(--primary);width:16px;height:16px;"/>
+                  <span id="lbl-ratio"></span>
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" data-i18n="ui.format"></label>
+                <select class="form-select" id="output-format">
+                  <option value="jpeg">JPG</option>
+                  <option value="png">PNG</option>
+                  <option value="webp">WebP</option>
+                </select>
+              </div>
+
+              <button class="btn btn-primary w-full" id="btn-resize" disabled></button>
+            </div>
+
+            <div style="font-size:.8rem;color:var(--text-secondary);text-align:center;" data-i18n="ui.privacyNote"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <div id="footer-placeholder"></div>
+
+  <script src="../js/i18n.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.documentElement.lang = window.LANG === 'pt' ? 'pt-BR' : 'en';
+    renderPage('..');
+
+    const L = {
+      pt: { title:'Redimensionar Imagem', subtitle:'Altere as dimensões da sua imagem em pixels ou porcentagem.', dzTitle:'Arraste e solte uma imagem aqui', dzSub:'Suporta JPG, PNG, WebP, GIF e mais', btnSelect:'Selecionar imagem', btnResize:'Redimensionar', btnDownload:'⬇ Baixar imagem', previewLabel:'Imagem original', lblMode:'Modo', optPixels:'Pixels (W × H)', optPercent:'Porcentagem (%)', lblDimensions:'Largura × Altura (px)', lblPercent:'Escala', lblRatio:'Manter proporção', resultTitle:'✅ Imagem redimensionada!', lblOrigSize:'Original:', lblNewSize:'Novo:', },
+      en: { title:'Resize Image', subtitle:'Change your image dimensions in pixels or percentage.', dzTitle:'Drag & drop an image here', dzSub:'Supports JPG, PNG, WebP, GIF and more', btnSelect:'Select image', btnResize:'Resize', btnDownload:'⬇ Download image', previewLabel:'Original image', lblMode:'Mode', optPixels:'Pixels (W × H)', optPercent:'Percentage (%)', lblDimensions:'Width × Height (px)', lblPercent:'Scale', lblRatio:'Keep aspect ratio', resultTitle:'✅ Image resized!', lblOrigSize:'Original:', lblNewSize:'New:', }
+    };
+    const S = L[window.LANG] || L.pt;
+
+    document.getElementById('title').textContent          = S.title;
+    document.getElementById('subtitle').textContent       = S.subtitle;
+    document.getElementById('dz-title').textContent       = S.dzTitle;
+    document.getElementById('dz-sub').textContent         = S.dzSub;
+    document.getElementById('btn-select').textContent     = S.btnSelect;
+    document.getElementById('btn-resize').textContent     = S.btnResize;
+    document.getElementById('btn-download').textContent   = S.btnDownload;
+    document.getElementById('preview-label').textContent  = S.previewLabel;
+    document.getElementById('lbl-mode').textContent       = S.lblMode;
+    document.getElementById('opt-pixels').textContent     = S.optPixels;
+    document.getElementById('opt-percent').textContent    = S.optPercent;
+    document.getElementById('lbl-dimensions').textContent = S.lblDimensions;
+    document.getElementById('lbl-percent').textContent    = S.lblPercent;
+    document.getElementById('lbl-ratio').textContent      = S.lblRatio;
+    document.getElementById('result-title').textContent   = S.resultTitle;
+    document.title = S.title + ' — ConverTaTudo';
+
+    // Mode toggle
+    document.getElementById('resize-mode').addEventListener('change', function() {
+      document.getElementById('group-pixels').classList.toggle('hidden', this.value === 'percent');
+      document.getElementById('group-percent').classList.toggle('hidden', this.value !== 'percent');
+    });
+
+    // Percent slider
+    const pSlider = document.getElementById('percent-slider');
+    pSlider.addEventListener('input', () => { document.getElementById('percent-val').textContent = pSlider.value + '%'; });
+
+    // Aspect ratio locking
+    let origW = 0, origH = 0;
+    let lockingW = false, lockingH = false;
+    document.getElementById('inp-width').addEventListener('input', function() {
+      if (lockingH) return;
+      if (document.getElementById('keep-ratio').checked && origW && origH) {
+        lockingW = true;
+        document.getElementById('inp-height').value = Math.round(this.value * origH / origW) || '';
+        lockingW = false;
+      }
+    });
+    document.getElementById('inp-height').addEventListener('input', function() {
+      if (lockingW) return;
+      if (document.getElementById('keep-ratio').checked && origW && origH) {
+        lockingH = true;
+        document.getElementById('inp-width').value = Math.round(this.value * origW / origH) || '';
+        lockingH = false;
+      }
+    });
+
+    let currentFile = null;
+
+    initDropzone({ el: document.getElementById('dropzone'), accept: 'image/*', multiple: false, onFiles: (f) => { if(f[0]) loadFile(f[0]); } });
+    document.getElementById('file-input').addEventListener('change', function() { if(this.files[0]) loadFile(this.files[0]); this.value=''; });
+
+    function loadFile(file) {
+      currentFile = file;
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        origW = img.naturalWidth; origH = img.naturalHeight;
+        document.getElementById('preview-img').src = url;
+        document.getElementById('inp-width').value = origW;
+        document.getElementById('inp-height').value = origH;
+        document.getElementById('info-row').innerHTML = `<span>${S.lblOrigSize} <strong>${origW} × ${origH} px</strong></span><span><strong>${formatSize(file.size)}</strong></span>`;
+        document.getElementById('preview-section').classList.remove('hidden');
+        document.getElementById('result-section').classList.add('hidden');
+        document.getElementById('btn-resize').disabled = false;
+      };
+      img.src = url;
+    }
+
+    document.getElementById('btn-resize').addEventListener('click', () => {
+      if (!currentFile) return;
+      const mode = document.getElementById('resize-mode').value;
+      let newW, newH;
+      if (mode === 'percent') {
+        const pct = parseInt(pSlider.value) / 100;
+        newW = Math.round(origW * pct);
+        newH = Math.round(origH * pct);
+      } else {
+        newW = parseInt(document.getElementById('inp-width').value) || origW;
+        newH = parseInt(document.getElementById('inp-height').value) || origH;
+      }
+
+      const fmt = document.getElementById('output-format').value;
+      const canvas = document.createElement('canvas');
+      canvas.width = newW; canvas.height = newH;
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, newW, newH);
+        canvas.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          document.getElementById('result-img').src = url;
+          document.getElementById('result-info-row').innerHTML = `<span>${S.lblNewSize} <strong>${newW} × ${newH} px</strong></span><span><strong>${formatSize(blob.size)}</strong></span>`;
+          document.getElementById('result-section').classList.remove('hidden');
+          document.getElementById('btn-download').onclick = () => {
+            const ext = fmt === 'jpeg' ? 'jpg' : fmt;
+            downloadBlob(blob, fileBaseName(currentFile.name) + '_' + newW + 'x' + newH + '.' + ext);
+          };
+          toast(window.LANG==='pt'?'Imagem redimensionada!':'Image resized!','success');
+        }, `image/${fmt}`, fmt==='png'?undefined:0.92);
+      };
+      img.src = URL.createObjectURL(currentFile);
+    });
+  </script>
+</body>
+</html>
