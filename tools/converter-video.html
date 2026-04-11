@@ -9,7 +9,8 @@
   <link rel="stylesheet" href="../css/style.css"/>
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2791552825636590" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.10.1/dist/ffmpeg.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
   <style>
     video { max-width: 100%; border-radius: var(--radius-sm); background: #000; display: block; margin: 12px 0; }
     .warn-box {
@@ -215,12 +216,10 @@
       document.getElementById('gif-group').classList.toggle('hidden', !isGif);
     });
 
-    // ── ffmpeg ──
-    const { createFFmpeg, fetchFile } = FFmpeg;
-    const ffmpeg = createFFmpeg({
-      corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js',
-      log: false,
-    });
+    // ── ffmpeg 0.12 (core-st = single-thread, sem SharedArrayBuffer) ──
+    const { FFmpeg } = FFmpegWASM;
+    const { fetchFile, toBlobURL } = FFmpegUtil;
+    const ffmpeg = new FFmpeg();
 
     let ffmpegReady = false;
     let selectedFile = null;
@@ -228,13 +227,18 @@
 
     (async () => {
       try {
-        await ffmpeg.load();
+        const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.6/dist/umd';
+        await ffmpeg.load({
+          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+        });
         ffmpegReady = true;
         document.getElementById('ffmpeg-notice-text').textContent = S.ffmpegReady;
         setTimeout(() => document.getElementById('ffmpeg-notice').style.display = 'none', 2000);
         if (selectedFile) document.getElementById('btn-convert').disabled = false;
       } catch(e) {
         document.getElementById('ffmpeg-notice-text').textContent = '⚠️ Erro ao carregar. Recarregue a página.';
+        console.error(e);
       }
     })();
 
@@ -295,7 +299,7 @@
       }, 300);
 
       try {
-        ffmpeg.FS('writeFile', inputName, await fetchFile(selectedFile));
+        await ffmpeg.writeFile(inputName, await fetchFile(selectedFile));
 
         let args = ['-i', inputName];
 
@@ -312,13 +316,13 @@
         }
 
         args.push(outputName);
-        await ffmpeg.run(...args);
+        await ffmpeg.exec(args);
 
         clearInterval(progInterval);
         bar.style.width = '100%';
         txt.textContent = '100%';
 
-        const data = ffmpeg.FS('readFile', outputName);
+        const data = await ffmpeg.readFile(outputName);
         const mimeMap = { mp4: 'video/mp4', webm: 'video/webm', avi: 'video/x-msvideo', gif: 'image/gif' };
         resultBlob = new Blob([data.buffer], { type: mimeMap[fmt] || 'video/mp4' });
         const url = URL.createObjectURL(resultBlob);
@@ -343,8 +347,8 @@
         document.getElementById('result-section').classList.remove('hidden');
         toast(window.LANG === 'pt' ? 'Conversão concluída!' : 'Conversion complete!', 'success');
 
-        try { ffmpeg.FS('unlink', inputName); } catch(e) {}
-        try { ffmpeg.FS('unlink', outputName); } catch(e) {}
+        try { await ffmpeg.deleteFile(inputName); } catch(e) {}
+        try { await ffmpeg.deleteFile(outputName); } catch(e) {}
       } catch(err) {
         clearInterval(progInterval);
         document.getElementById('progress-section').classList.add('hidden');

@@ -9,8 +9,8 @@
   <link rel="stylesheet" href="../css/style.css"/>
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2791552825636590" crossorigin="anonymous"></script>
-  <!-- ffmpeg.wasm 0.10 (single-thread, funciona sem SharedArrayBuffer) -->
-  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.10.1/dist/ffmpeg.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
   <style>
     .audio-player {
       width: 100%;
@@ -174,12 +174,10 @@
     document.getElementById('result-title').textContent    = S.resultTitle;
     document.title = S.title + ' — ConverTaTudo';
 
-    // ── ffmpeg ──
-    const { createFFmpeg, fetchFile } = FFmpeg;
-    const ffmpeg = createFFmpeg({
-      corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js',
-      log: false,
-    });
+    // ── ffmpeg 0.12 (core-st = single-thread, sem SharedArrayBuffer) ──
+    const { FFmpeg } = FFmpegWASM;
+    const { fetchFile, toBlobURL } = FFmpegUtil;
+    const ffmpeg = new FFmpeg();
 
     let ffmpegReady = false;
     let selectedFile = null;
@@ -187,13 +185,18 @@
 
     (async () => {
       try {
-        await ffmpeg.load();
+        const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.6/dist/umd';
+        await ffmpeg.load({
+          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+        });
         ffmpegReady = true;
         document.getElementById('ffmpeg-notice-text').textContent = S.ffmpegReady;
         setTimeout(() => document.getElementById('ffmpeg-notice').style.display = 'none', 2000);
         if (selectedFile) document.getElementById('btn-convert').disabled = false;
       } catch(e) {
         document.getElementById('ffmpeg-notice-text').textContent = '⚠️ Erro ao carregar motor. Recarregue a página.';
+        console.error(e);
       }
     })();
 
@@ -252,7 +255,7 @@
       try {
         const inputExt = fileExt(selectedFile.name);
         const inputName = `input.${inputExt}`;
-        ffmpeg.FS('writeFile', inputName, await fetchFile(selectedFile));
+        await ffmpeg.writeFile(inputName, await fetchFile(selectedFile));
 
         // Build ffmpeg args based on format
         const args = ['-i', inputName];
@@ -263,13 +266,13 @@
         else if (fmt === 'flac') { args.push('-f', 'flac'); }
         args.push(outputName);
 
-        await ffmpeg.run(...args);
+        await ffmpeg.exec(args);
 
         clearInterval(progInterval);
         bar.style.width = '100%';
         txt.textContent = '100%';
 
-        const data = ffmpeg.FS('readFile', outputName);
+        const data = await ffmpeg.readFile(outputName);
         resultBlob = new Blob([data.buffer], { type: `audio/${fmt}` });
         const url = URL.createObjectURL(resultBlob);
         document.getElementById('audio-result').src = url;
@@ -279,8 +282,8 @@
         toast(S.resultTitle.replace('✅ ', ''), 'success');
 
         // Cleanup
-        try { ffmpeg.FS('unlink', inputName); } catch(e) {}
-        try { ffmpeg.FS('unlink', outputName); } catch(e) {}
+        try { await ffmpeg.deleteFile(inputName); } catch(e) {}
+        try { await ffmpeg.deleteFile(outputName); } catch(e) {}
       } catch(err) {
         clearInterval(progInterval);
         document.getElementById('progress-section').classList.add('hidden');
